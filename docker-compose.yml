@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # NestJS Application
+  ms_nestjs_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: ms_nestjs_app
+    restart: always
+    env_file:
+      - .env.dev
+    ports:
+      - "3001:3001"
+    networks:
+      - erp_network
+
+networks:
+  erp_network:
+    external: true
