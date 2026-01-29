@@ -64,6 +64,13 @@ export class ContactoController {
         return this.contactoApplication.findById(id);
     }
 
+    @Get('username/:username')
+    @Permissions('CNT_VIEW', 'CNT_CREATE', 'CNT_EDIT', 'SYS_ADMIN')
+    async getContactoByUsername(@Param('username') username: string): Promise<ContactoDTO> {
+        Logger.warn(`Fetching contact with username: ${username}`);
+        return this.contactoApplication.findByUsername(username);
+    }
+
     @Delete(':id')
     @Permissions( 'CNT_CREATE', 'SYS_ADMIN')
     async deleteContacto(@Param('id') id: string): Promise<void> {

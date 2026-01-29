@@ -25,6 +25,16 @@ export class ContactoService implements IContactoService {
         return contactoEntity; // Placeholder
     }
 
+    async findByUsername(username: string): Promise<ContactoModel | null> {
+        const contacto = await this.contactoRepository.findByUsername(username);
+        const contactoEntity = contacto ? ContactoModel.create(contacto) : null;
+        if (!contacto) {
+            throw new EntityNotFoundError(`Contacto with username ${username} not found`);
+        }
+        Logger.log(`Contacto with username ${username} found successfully`);
+        return contactoEntity;
+    }
+
     async findAll(): Promise<ContactoModel[] | null> {
         // Implementation for finding all contacts
         const contactos = await this.contactoRepository.findAll();
@@ -51,7 +61,7 @@ export class ContactoService implements IContactoService {
             url: data.url,
             imgBase64: data.imgBase64,
             tipoContacto: tipoContacto,
-            organizaciones:null,
+            organizaciones: null,
             usuario: null
         }
         const createdContacto: ContactoModel = await this.contactoRepository
@@ -81,7 +91,7 @@ export class ContactoService implements IContactoService {
             url: data.url,
             imgBase64: data.imgBase64,
             tipoContacto: tipoContacto,
-            organizaciones:null,
+            organizaciones: null,
             usuario: null
         }
         delete contacto.id; // Remove id to avoid conflict with update method
@@ -109,4 +119,6 @@ export class ContactoService implements IContactoService {
                 throw new InsertError(`Error deleting contact: ${error.message}`);
             });
     }
+
+
 }

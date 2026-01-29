@@ -4,6 +4,7 @@ import { ContactoModel } from "../../model/contacto.model";
 
 export interface IContactoService {
     findById(id: string): Promise<ContactoModel | null>;
+    findByUsername(username: string): Promise<ContactoModel | null>;
     findAll(): Promise<ContactoModel[] | null>;
     create(data: ContactoDTO): Promise<any>;
     update(id: string, data: ContactoDTO): Promise<ContactoModel>;

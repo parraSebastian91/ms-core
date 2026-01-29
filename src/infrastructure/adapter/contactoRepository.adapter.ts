@@ -44,6 +44,15 @@ export class ContactoRepositoryAdapter implements IContactoRepository {
             });
     }
 
+    async findByUsername(username: string): Promise<ContactoEntity | null> {
+        return this.contactoRepository.findOne({
+            where: { usuario: { userName: username } },
+            relations: ["tipoContacto", "usuario"]
+        });
+    }
+
+
+
     
     
 }

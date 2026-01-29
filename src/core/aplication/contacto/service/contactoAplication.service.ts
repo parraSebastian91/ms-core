@@ -11,6 +11,10 @@ export class ContactoAplicationService implements IContactoAplication {
         return await this.contactoService.findById(id);
     }
 
+    async findByUsername(username: string): Promise<ContactoModel | null> {
+        return await this.contactoService.findByUsername(username);
+    }
+
     async findAll(): Promise<ContactoModel[] | null> {
         return await this.contactoService.findAll();
     }

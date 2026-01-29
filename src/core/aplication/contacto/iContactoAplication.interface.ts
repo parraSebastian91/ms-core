@@ -1,6 +1,7 @@
 
 export interface IContactoAplication {
     findById(id: string): Promise<any | null>;
+    findByUsername(username: string): Promise<any | null>;
     findAll(): Promise<any[] | null>;
     create(data: any): Promise<any>;
     update(id: string, data: any): Promise<any>;
