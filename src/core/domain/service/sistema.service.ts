@@ -35,6 +35,7 @@ export class SistemaService implements ISistemaService {
                     id: s.sistemaid,
                     nombre: s.sistemanombre,
                     path: s.sistemapath,
+                    icons: "home",
                     modulos: []
                 };
                 sistemaArray.sistemas.push(sistema);
@@ -46,6 +47,7 @@ export class SistemaService implements ISistemaService {
                     id: s.moduloid,
                     nombre: s.modulonombre,
                     path: s.modulopath,
+                    icons: "home",
                     funcionalidades: []
                 };
                 sistema.modulos.push(modulo);
@@ -56,12 +58,26 @@ export class SistemaService implements ISistemaService {
                 funcionalidad = {
                     id: s.funcionalidadid,
                     nombre: s.funcionalidadnombre,
-                    path: s.funcionalidadpath
+                    path: s.funcionalidadpath,
+                    icons: "home"
                 };
                 modulo.funcionalidades.push(funcionalidad);
             }
         });
 
         return sistemaArray;
+    }
+
+    async getSistemaMobile(): Promise<SistemaDTO[]> {
+        const sistemas: SistemaDTO[] =[
+            {
+                username: 'mobile_user',
+                nombre: 'Mobile User',
+                razon_social: 'Mobile Solutions Inc.',
+                
+                sistemas: []
+            }
+        ]
+        return sistemas;
     }
 }

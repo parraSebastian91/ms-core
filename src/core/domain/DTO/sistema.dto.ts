@@ -6,14 +6,17 @@ interface SistemaDTO {
         id: number;
         nombre: string;
         path: string;
+        icons: string;
         modulos: {
             id: number;
             nombre: string;
             path: string;
+            icons: string;
             funcionalidades: {
                 id: number;
                 nombre: string;
                 path: string;
+                icons: string;
             }[];
         }[];
     }[];
