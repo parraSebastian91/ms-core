@@ -25,7 +25,7 @@ export class ContactoDTO {
     url: string;
 
     @IsBase64({},{ message: "La imagen debe ser una cadena Base64 válida" })
-    imgBase64: string;
+    avatarData: string;
 
     @IsNotEmpty({ message: "El tipo de contacto es obligatorio" })
     @IsNumber({},{ message: "El tipo de contacto debe ser un número" })

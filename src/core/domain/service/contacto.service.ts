@@ -59,7 +59,7 @@ export class ContactoService implements IContactoService {
             correo: data.correo,
             rrss: data.rrss,
             url: data.url,
-            imgBase64: data.imgBase64,
+            avatarData: data.avatarData,
             tipoContacto: tipoContacto,
             organizaciones: null,
             usuario: null
@@ -89,7 +89,7 @@ export class ContactoService implements IContactoService {
             correo: data.correo,
             rrss: data.rrss,
             url: data.url,
-            imgBase64: data.imgBase64,
+            avatarData: data.avatarData,
             tipoContacto: tipoContacto,
             organizaciones: null,
             usuario: null

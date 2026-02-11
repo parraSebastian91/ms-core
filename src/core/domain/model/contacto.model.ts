@@ -19,7 +19,7 @@ export class ContactoModel extends Entity<ContactoModel> {
     correo: Correo;
     rrss: string;
     url: string;
-    imgBase64: string;
+    avatarData: string;
     tipoContacto: TipoContactoModel;
     usuario: UsuarioModel;
     organizaciones: OrganizacionModel[];
@@ -33,7 +33,7 @@ export class ContactoModel extends Entity<ContactoModel> {
     }
     
     static create(contacto: ContactoEntity): ContactoModel {
-        const { id, nombre, direccion, celular, correo, rrss, url, imgBase64, tipoContacto, organizaciones } = contacto;
+        const { id, nombre, direccion, celular, correo, rrss, url, avatarData, tipoContacto, organizaciones } = contacto;
         const tipoContactoEntity = tipoContacto ? TipoContactoModel.create(tipoContacto) : null;
         const celularValueObject = new Celular(celular);
         return new ContactoModel.ContactoBuilder()
@@ -44,14 +44,14 @@ export class ContactoModel extends Entity<ContactoModel> {
             .correo(new Correo(correo))
             .rrss(rrss)
             .url(url)
-            .imgBase64(imgBase64)
+            .avatarData(avatarData)
             .tipoContacto(tipoContactoEntity)
             .organizaciones(organizaciones)
             .build();
     }
     
     static toEntity(contactoModel: ContactoModel): ContactoEntity {
-        const { id, nombre, direccion, celular, correo, rrss, url, imgBase64, tipoContacto,usuario, organizaciones} = contactoModel;
+        const { id, nombre, direccion, celular, correo, rrss, url, avatarData, tipoContacto,usuario, organizaciones} = contactoModel;
         const contactoEntity: ContactoEntity = {
             id: Number(id.getValue()),
             nombre,
@@ -60,7 +60,7 @@ export class ContactoModel extends Entity<ContactoModel> {
             correo: correo.getValue(),
             rrss,
             url,
-            imgBase64,
+            avatarData,
             tipoContacto: tipoContacto ? TipoContactoModel.toEntity(tipoContacto) : null,
             usuario: usuario ? UsuarioModel.toEntity(usuario): null,
             organizaciones: organizaciones? organizaciones.map(o => OrganizacionModel.toEntity(o)): null
@@ -108,8 +108,8 @@ export class ContactoModel extends Entity<ContactoModel> {
             return this;
         }
 
-        imgBase64(imgBase64: string) {
-            this.contacto.imgBase64 = imgBase64;
+        avatarData(avatarData: string) {
+            this.contacto.avatarData = avatarData;
             return this;
         }
 

@@ -30,7 +30,6 @@ CREATE TABLE core.contacto (
   correo VARCHAR(50),
   redes_sociales TEXT,
   url TEXT,
-  imagen_base64 VARCHAR,
   tipo_contacto_id BIGINT
 );
 
