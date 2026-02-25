@@ -8,7 +8,15 @@ import { TipoContactoEntity } from "src/infrastructure/database/entities/tipoCon
 import { ContactoDTO } from "src/infrastructure/http-server/model/dto/contacto.dto";
 import { ContactoEntity } from "src/infrastructure/database/entities/contacto.entity";
 import { InsertError } from "src/core/share/errors/Insert.error";
+import { UpdateError } from "src/core/share/errors/Update.error";
 
+export const MULTIMEDIA_STATE = {
+    UPLOADED: "uploaded",
+    PENDING: "pending",
+    PROCESSING: "processing",
+    PROCESSED: "processed",
+    ERROR: "error"
+}
 
 export class ContactoService implements IContactoService {
 
@@ -118,6 +126,35 @@ export class ContactoService implements IContactoService {
             .catch((error) => {
                 throw new InsertError(`Error deleting contact: ${error.message}`);
             });
+    }
+
+    async updateAvatar(uuid: string, file: { buffer: Buffer; originalname: string; mimetype: string; size: number }): Promise<string> {
+        const contacto = await this.contactoRepository.findContactoByUserUUID(uuid);
+        if (!contacto) {
+            throw new EntityNotFoundError(`Contacto with id ${uuid} not found`);
+        }
+        const avatarJson = {
+            path: "",
+            versions: [
+                "sm",
+                "md",
+                "lg"
+            ],
+            state: MULTIMEDIA_STATE.UPLOADED
+        }
+
+        contacto.avatarData = JSON.stringify(avatarJson);
+        await this.contactoRepository.update(contacto.id, contacto)
+            .then(() => {
+                Logger.log(`Avatar for contacto with id ${contacto.id} updated successfully`);
+            })
+            .catch((error) => {
+                throw new UpdateError(`Error updating avatar: ${error.message}`);
+            });
+        
+        
+
+        return  // Return the updated avatar data
     }
 
 

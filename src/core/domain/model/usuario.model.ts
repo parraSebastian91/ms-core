@@ -12,6 +12,7 @@ import * as bcrypt from "bcrypt";
 
 export class UsuarioModel extends Entity<UsuarioModel> {
 
+    uuid: string;
     userName: string;
     password: string;
     creacion: Date;
@@ -31,9 +32,10 @@ export class UsuarioModel extends Entity<UsuarioModel> {
 
 
     static create(usuario: UsuarioEntity): UsuarioModel {
-        const { id, userName, password, creacion, activo, update, contacto, rol } = usuario;
+        const { id, uuid, userName, password, creacion, activo, update, contacto, rol } = usuario;
         return new this.usuarioModelBuilder()
             .setId(Number(id))
+            .setUuid(uuid)
             .setUserName(userName)
             .setPassword(password)
             .setCreacion(creacion)
@@ -45,10 +47,11 @@ export class UsuarioModel extends Entity<UsuarioModel> {
     }
 
     static toEntity(usuarioModel: UsuarioModel): UsuarioEntity {
-        const { userName, password, creacion, activo, update, contacto, rol } = usuarioModel;
+        const { uuid, userName, password, creacion, activo, update, contacto, rol } = usuarioModel;
 
         return {
             id: Number(usuarioModel.id.getValue()),
+            uuid,
             userName,
             password,
             creacion,
@@ -81,6 +84,11 @@ export class UsuarioModel extends Entity<UsuarioModel> {
 
         setId(id: number) {
             this.UsuarioModel.id = new Id(id);
+            return this;
+        }
+
+        setUuid(uuid: string) {
+            this.UsuarioModel.uuid = uuid;
             return this;
         }
 

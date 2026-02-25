@@ -9,4 +9,5 @@ export interface IContactoService {
     create(data: ContactoDTO): Promise<any>;
     update(id: string, data: ContactoDTO): Promise<ContactoModel>;
     delete(id: string): Promise<void>;
+    updateAvatar(uuid: string, file: { buffer: Buffer; originalname: string; mimetype: string; size: number }): Promise<string>;
 }

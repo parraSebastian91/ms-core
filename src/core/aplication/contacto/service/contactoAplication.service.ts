@@ -30,4 +30,8 @@ export class ContactoAplicationService implements IContactoAplication {
     async delete(id: string): Promise<void> {
         return await this.contactoService.delete(id);
     }
+
+    async updateAvatar(uuid: string, file: { buffer: Buffer; originalname: string; mimetype: string; size: number }): Promise<string> {
+        return await this.contactoService.updateAvatar(uuid, file);
+    }
 }

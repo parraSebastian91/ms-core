@@ -10,6 +10,7 @@ import { UsuarioModel } from "./usuario.model";
 import { UsuarioEntity } from "src/infrastructure/database/entities/usuario.entity";
 import { OrganizacionModel } from "./organizacion.entity";
 import { OrganizacionEntity } from "src/infrastructure/database/entities/organizacion.entity";
+import { commandUpdateUserProfile } from "src/core/aplication/userProfileUseCase/command/updateProfile.command";
 
 export class ContactoModel extends Entity<ContactoModel> {
 
@@ -49,7 +50,13 @@ export class ContactoModel extends Entity<ContactoModel> {
             .organizaciones(organizaciones)
             .build();
     }
-    
+
+    static createByCommand(command: commandUpdateUserProfile, contacto: ContactoModel): ContactoModel {
+        return new ContactoModel.ContactoBuilder()
+            .updateProfile(command, contacto)
+            .build();
+    }
+
     static toEntity(contactoModel: ContactoModel): ContactoEntity {
         const { id, nombre, direccion, celular, correo, rrss, url, avatarData, tipoContacto,usuario, organizaciones} = contactoModel;
         const contactoEntity: ContactoEntity = {
@@ -120,6 +127,19 @@ export class ContactoModel extends Entity<ContactoModel> {
 
         organizaciones(organizaciones: OrganizacionEntity[]){
             this.contacto.organizaciones = organizaciones? organizaciones.map(o => OrganizacionModel.create(o)): null;
+            return this;
+        }
+
+        updateProfile(command: commandUpdateUserProfile, contacto: ContactoModel) {
+            this.contacto.nombre = command.nombre;
+            this.contacto.direccion = command.direccion;
+            this.contacto.celular = new Celular(command.celular);
+            this.contacto.correo = new Correo(command.correo);
+            this.contacto.rrss = command.rrss;
+            this.contacto.url = command.url;
+            this.contacto.tipoContacto = contacto.tipoContacto;
+            this.contacto.usuario = contacto.usuario;
+            this.contacto.organizaciones = contacto.organizaciones;
             return this;
         }
 

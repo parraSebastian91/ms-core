@@ -6,6 +6,7 @@ import { EntityNotFoundError } from "../../core/share/errors/usuarioNotFound.err
 import { QueryFailedError, TypeORMError } from "typeorm";
 import { UserExistError } from "src/core/share/errors/usuarioExistError.error";
 import { UserNotFoundError } from "src/core/share/errors/UserNotFound.error";
+import { UpdateError } from "src/core/share/errors/Update.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -59,6 +60,11 @@ export class CoreExceptionFilter implements ExceptionFilter {
         else if (exception instanceof ForbiddenException) {
             Logger.warn(`ForbiddenException error: ${exception.message}`);
             status = HttpStatus.FORBIDDEN;
+            message = exception.message;
+        }
+        else if (exception instanceof UpdateError) {
+            Logger.error(`Error: ${exception.message}`, exception.stack);
+            status = HttpStatus.BAD_REQUEST;
             message = exception.message;
         }
         else {

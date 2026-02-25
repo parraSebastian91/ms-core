@@ -4,9 +4,12 @@ import { ContactoEntity } from "./contacto.entity";
 
 @Entity({ name: 'usuario' })
 export class UsuarioEntity {
-
+    
     @PrimaryGeneratedColumn({ type: "bigint", name: 'usuario_id' })
     id: number;
+
+    @Column({ type: "uuid", name: 'usuario_uuid', unique: true, default: () => 'gen_random_uuid()' })
+    uuid: string;
 
     @Column({ type: "character varying", name: 'username' })
     userName: string;

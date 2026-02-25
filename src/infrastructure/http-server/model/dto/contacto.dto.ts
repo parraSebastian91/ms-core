@@ -21,13 +21,14 @@ export class ContactoDTO {
     @IsUrl({}, { message: "La red social debe ser una URL válida" })
     rrss: string;
 
-    @IsUrl({},{ message: "La URL debe ser una URL válida" })
+    @IsUrl({}, { message: "La URL debe ser una URL válida" })
     url: string;
 
-    @IsBase64({},{ message: "La imagen debe ser una cadena Base64 válida" })
+    @IsBase64({}, { message: "La imagen debe ser una cadena Base64 válida" })
     avatarData: string;
 
     @IsNotEmpty({ message: "El tipo de contacto es obligatorio" })
-    @IsNumber({},{ message: "El tipo de contacto debe ser un número" })
+    @IsNumber({}, { message: "El tipo de contacto debe ser un número" })
     tipoContactoId: string;
 }
+

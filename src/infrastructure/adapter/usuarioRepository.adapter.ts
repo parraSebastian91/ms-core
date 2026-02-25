@@ -3,6 +3,7 @@ import { UsuarioEntity } from "../database/entities/usuario.entity";
 import { Repository } from "typeorm";
 import { IUsuarioRepository } from "../../core/domain/puertos/outbound/iUsuarioRepository.interface";
 import { Injectable } from "@nestjs/common";
+import { UsuarioModel } from "src/core/domain/model/usuario.model";
 
 @Injectable()
 export class UsuarioRepositoryAdapter implements IUsuarioRepository {
@@ -19,15 +20,16 @@ export class UsuarioRepositoryAdapter implements IUsuarioRepository {
             relations: ['rol', 'contacto', 'contacto.tipoContacto'],
         });
     }
-    getUsuarioById(id: number): Promise<UsuarioEntity> {
-        return this.usuarioRepository
+    async getUsuarioById(uuid: string): Promise<UsuarioModel> {
+        const usuarioEntity = await this.usuarioRepository
             .createQueryBuilder('usuario')
             .leftJoinAndSelect('usuario.rol', 'rol')
             .leftJoinAndSelect('usuario.contacto', 'contacto')
             .leftJoinAndSelect('contacto.tipoContacto', 'tipoContacto')
             .leftJoinAndSelect('rol.permisos', 'permisos', 'permisos.activo = :activo', { activo: true })
-            .where('usuario.id = :id', { id })
+            .where('usuario.uuid = :uuid', { uuid })
             .getOne();
+        return UsuarioModel.create(usuarioEntity);
     }
 
     async getUsuarioByUsername(username: string): Promise<UsuarioEntity> {
