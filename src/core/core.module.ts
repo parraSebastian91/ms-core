@@ -26,6 +26,7 @@ import { ISistemaRepository } from './domain/puertos/outbound/ISistemaRepository
 import { SistemaAplicationService } from './aplication/sistema/service/sistemaAplication.service';
 import { ISistemaService } from './domain/puertos/inbound/ISistemaService.interface';
 import { SistemaService } from './domain/service/sistema.service';
+import { UserProfileService } from './aplication/userProfileUseCase/userprofile.usecase.impl.service';
 
 export type CoreModuleOptions = {
     modules: any[];
@@ -167,6 +168,16 @@ export class CoreModule {
             inject: [sistemaRepository]
         };
 
+        const userProfileUseCaseProvider = {
+            provide: USER_PROFILE_APPLICATION,
+            useFactory(
+                contactoRepository: IContactoRepository,
+            ){
+                return new UserProfileService(contactoRepository);
+            },
+            inject: [contactoRepository]
+        }
+
         return {
             module: CoreModule,
             global: true,
@@ -185,13 +196,15 @@ export class CoreModule {
                 rolServiceProvider,
                 sistemaAplicationProvider,
                 sistemaServiceProvider,
+                userProfileUseCaseProvider
             ],
             exports: [
                 USUARIO_APPLICATION,
                 CONTACTO_APPLICATION,
                 TIPO_CONTACTO_APPLICATION,
                 ROL_APLICATION,
-                SISTEMA_APLICATION
+                SISTEMA_APLICATION,
+                USER_PROFILE_APPLICATION
             ],
         };
     }

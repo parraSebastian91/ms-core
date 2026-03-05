@@ -25,7 +25,7 @@ export class ContactoService implements IContactoService {
     async findById(id: string): Promise<ContactoModel | null> {
         // Implementation for finding a contact by ID
         const contacto = await this.contactoRepository.findById(Number(id));
-        const contactoEntity = contacto ? ContactoModel.create(contacto) : null;
+        const contactoEntity = contacto ? contacto : null;
         if (!contacto) {
             throw new EntityNotFoundError(`Contacto with id ${id} not found`);
         }
@@ -35,7 +35,7 @@ export class ContactoService implements IContactoService {
 
     async findByUsername(username: string): Promise<ContactoModel | null> {
         const contacto = await this.contactoRepository.findByUsername(username);
-        const contactoEntity = contacto ? ContactoModel.create(contacto) : null;
+        const contactoEntity = contacto ? contacto : null;
         if (!contacto) {
             throw new EntityNotFoundError(`Contacto with username ${username} not found`);
         }
@@ -50,7 +50,7 @@ export class ContactoService implements IContactoService {
             throw new EntityNotFoundError(`No contacts found in the system`);
         }
         Logger.log(`Found ${contactos.length} contacts`);
-        return contactos.map(contacto => ContactoModel.create(contacto)); // Convert to Contacto entities    
+        return contactos // Convert to Contacto entities    
     }
 
     async create(data: ContactoDTO): Promise<ContactoModel> {
@@ -67,7 +67,7 @@ export class ContactoService implements IContactoService {
             correo: data.correo,
             rrss: data.rrss,
             url: data.url,
-            avatarData: data.avatarData,
+            avatarData: JSON.parse(data.avatarData),
             tipoContacto: tipoContacto,
             organizaciones: null,
             usuario: null
@@ -76,7 +76,7 @@ export class ContactoService implements IContactoService {
             .create(contacto)
             .then((created) => {
                 Logger.log(`Contacto created successfully with id ${created.id}`);
-                return ContactoModel.create(created);
+                return created;
             }).catch((error) => {
                 throw new InsertError(`Error creating contact: ${error.message}`);
             });
@@ -97,7 +97,7 @@ export class ContactoService implements IContactoService {
             correo: data.correo,
             rrss: data.rrss,
             url: data.url,
-            avatarData: data.avatarData,
+            avatarData: JSON.parse(data.avatarData),
             tipoContacto: tipoContacto,
             organizaciones: null,
             usuario: null
@@ -107,7 +107,7 @@ export class ContactoService implements IContactoService {
             .update(Number(id), contacto)
             .then((updated) => {
                 Logger.log(`Contacto with id ${id} updated successfully`);
-                return ContactoModel.create(updated);
+                return updated;
             }).catch((error) => {
                 throw new InsertError(`Error updating contact: ${error.message}`);
             });
@@ -144,7 +144,7 @@ export class ContactoService implements IContactoService {
         }
 
         contacto.avatarData = JSON.stringify(avatarJson);
-        await this.contactoRepository.update(contacto.id, contacto)
+        await this.contactoRepository.update(contacto.id.getValue(), ContactoModel.toEntity(contacto))
             .then(() => {
                 Logger.log(`Avatar for contacto with id ${contacto.id} updated successfully`);
             })

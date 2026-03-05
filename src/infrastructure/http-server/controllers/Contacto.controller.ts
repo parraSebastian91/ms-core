@@ -10,6 +10,7 @@ import { Permissions } from "../decorators/permissions.decorator";
 import { ApiResponse } from "../model/api-response.model";
 import { In } from "typeorm";
 import { IUserProfileUseCase } from "src/core/aplication/userProfileUseCase/userProfile.useCase.interface";
+import { get } from "http";
 
 
 @Controller("contacto")
@@ -81,6 +82,19 @@ export class ContactoController {
     async deleteContacto(@Param('id') id: string): Promise<void> {
         Logger.warn(`Deleting contact with id: ${id}`);
         return this.contactoApplication.delete(id);
+    }
+
+    @Get('/:uuid')
+    @Permissions('CNT_EDIT', 'SYS_ADMIN')
+    async GetUserProfile(
+        @Param('uuid') uuid: string,
+        @Body() body: ContactoDTO,
+    ): Promise<ApiResponse<string>> {
+        Logger.warn(`Fetching user profile for contact with uuid: ${uuid}`);
+
+        const userProfile = await this.userProfileUseCase.getUserProfile(uuid);
+
+        return new ApiResponse(200, "Correcto", userProfile);
     }
 
     @Put('/:uuid/profile')

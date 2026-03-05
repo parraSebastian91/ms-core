@@ -11,6 +11,7 @@ import { UsuarioEntity } from "src/infrastructure/database/entities/usuario.enti
 import { OrganizacionModel } from "./organizacion.entity";
 import { OrganizacionEntity } from "src/infrastructure/database/entities/organizacion.entity";
 import { commandUpdateUserProfile } from "src/core/aplication/userProfileUseCase/command/updateProfile.command";
+import { json } from "stream/consumers";
 
 export class ContactoModel extends Entity<ContactoModel> {
 
@@ -45,7 +46,7 @@ export class ContactoModel extends Entity<ContactoModel> {
             .correo(new Correo(correo))
             .rrss(rrss)
             .url(url)
-            .avatarData(avatarData)
+            .avatarData(JSON.stringify(avatarData))
             .tipoContacto(tipoContactoEntity)
             .organizaciones(organizaciones)
             .build();
@@ -67,7 +68,7 @@ export class ContactoModel extends Entity<ContactoModel> {
             correo: correo.getValue(),
             rrss,
             url,
-            avatarData,
+            avatarData: JSON.parse(avatarData),
             tipoContacto: tipoContacto ? TipoContactoModel.toEntity(tipoContacto) : null,
             usuario: usuario ? UsuarioModel.toEntity(usuario): null,
             organizaciones: organizaciones? organizaciones.map(o => OrganizacionModel.toEntity(o)): null

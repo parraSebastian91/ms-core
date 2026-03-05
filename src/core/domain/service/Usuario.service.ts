@@ -9,6 +9,7 @@ import { IContactoRepository } from "../puertos/outbound/iContactoRepository.int
 import { IRolRepository } from "../puertos/outbound/iRolRepository.interface";
 import { UserExistError } from "src/core/share/errors/usuarioExistError.error";
 import { Id } from "src/core/share/valueObject/id.valueObject";
+import { ContactoModel } from "../model/contacto.model";
 
 
 export class UsuarioService implements IUsuarioService {
@@ -29,12 +30,12 @@ export class UsuarioService implements IUsuarioService {
         });
     }
 
-    async getUsuarioById(id: string): Promise<UsuarioModel> {
-        const usuario = await this.usuarioRepository.getUsuarioById(Number(id));
+    async getUsuarioById(uuid: string): Promise<UsuarioModel> {
+        const usuario = await this.usuarioRepository.getUsuarioById(uuid);
         if (!usuario) {
             throw new EntityNotFoundError("Usuario not found");
         }
-        return UsuarioModel.create(usuario);
+        return usuario;
     }
 
     async getUsuarioByUsername(username: string): Promise<UsuarioModel> {
@@ -54,13 +55,13 @@ export class UsuarioService implements IUsuarioService {
         const newId = await this.usuarioRepository.getValidId();
     
         const consultas = await Promise.all([this.rolRepository.getById(1), this.ContactoRepository.findById(Number(data.contactoId))])
-        const usuarioModel = UsuarioModel.fromDTO(data, consultas[1], null);
+        const usuarioModel = UsuarioModel.fromDTO(data,ContactoModel.toEntity(consultas[1]) , null);
         usuarioModel.id = new Id(newId);
         const usuarioEntity: UsuarioEntity = UsuarioModel.toEntity(usuarioModel);
 
         const createdUsuario = await this.usuarioRepository.createUsuario(usuarioEntity);
         createdUsuario.rol = [consultas[0]];
-        createdUsuario.contacto = consultas[1];
+        createdUsuario.contacto = ContactoModel.toEntity(consultas[1]);
 
         this.usuarioRepository.createUsuario(usuarioEntity);
 
