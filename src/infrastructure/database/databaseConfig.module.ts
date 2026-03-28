@@ -13,37 +13,43 @@ import { RolEntity } from './entities/rol.entity';
 import { RolModuloPermisoEntity } from './entities/rolModuloPermiso.entity';
 import { CuentaBancariaEntity } from './entities/cuentaBancaria.entity';
 import { FuncionalidadEntity } from './entities/funcionalidad.entity';
+import { VaultService } from '../secrets/vault.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SecretsModule } from '../secrets/secrets.module';
 
 @Module({
     imports: [
+        SecretsModule,
         TypeOrmModule.forRootAsync({
-            useFactory: () => ({
-                type: 'postgres',
-                host: process.env.DATABASE_HOST || 'localhost',
-                port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
-                username: process.env.DATABASE_USER || 'desarrollo',
-                password: process.env.DATABASE_PASSWORD || 'desarrollo123',
-                database: process.env.DATABASE_NAME || 'core_erp',
-                schema: process.env.DATABASE_SCHEMA || 'core',
-                entities: [
-                    ContactoEntity,
-                    CuentaBancariaEntity,
-                    ModuloEntity,
-                    RolModuloPermisoEntity,
-                    OrganizacionEntity,
-                    OrganizacionContactoEntity,
-                    OrganizacionSistemaEntity,
-                    PermisoEntity,
-                    RolEntity,
-                    RolModuloPermisoEntity,
-                    SistemaEntity,
-                    TipoContactoEntity,
-                    UsuarioEntity,
-                    FuncionalidadEntity
-                ],
-                synchronize: false, // Set to false in production
-                logging: process.env.DB_LOGGING === 'true',
-            })
+            imports: [SecretsModule, ConfigModule],
+            inject: [VaultService, ConfigService],
+            useFactory: async (vaultService: VaultService, configService: ConfigService) => {
+                const dbSecrets = vaultService.getAllSecrets('database');
+                return {
+                    type: 'postgres',
+                    host: dbSecrets.DATABASE_HOST || configService.get('DATABASE_HOST') || 'localhost',
+                    port: parseInt(dbSecrets.DATABASE_PORT, 10) || parseInt(configService.get('DATABASE_PORT'), 10) || 5432,
+                    username: dbSecrets.DATABASE_USER || configService.get('DATABASE_USER') || 'desarrollo',
+                    password: dbSecrets.DATABASE_PASSWORD || configService.get('DATABASE_PASSWORD') || 'desarrollo123',
+                    database: dbSecrets.DATABASE_NAME || configService.get('DATABASE_NAME') || 'core_erp',
+                    schema: dbSecrets.DATABASE_SCHEMA || configService.get('DATABASE_SCHEMA') || 'core',
+                    entities: [__dirname + '/entities/*.entity{.ts,.js}'],
+                    synchronize: false,  // ← NO usar true en producción
+                    // ✅ ACTIVAR LOGGING COMPLETO
+                    logging: false,  // O más específico:  ['query', 'error', 'schema', 'warn', 'info', 'log']
+                    logger: 'advanced-console',  // O 'debug', 'simple-console'
+
+                    // ✅ Ver todas las queries
+                    maxQueryExecutionTime: 1000,
+                    // ✅ Opciones adicionales de debugging
+                    extra: {
+                        // Ver detalles de conexión
+                        connectionTimeoutMillis: 5000,
+                        query_timeout: 10000,
+                        statement_timeout: 10000,
+                    },
+                }
+            },
         })
     ]
 })

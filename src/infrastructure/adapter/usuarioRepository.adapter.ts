@@ -20,6 +20,7 @@ export class UsuarioRepositoryAdapter implements IUsuarioRepository {
             relations: ['rol', 'contacto', 'contacto.tipoContacto'],
         });
     }
+    
     async getUsuarioById(uuid: string): Promise<UsuarioModel> {
         const usuarioEntity = await this.usuarioRepository
             .createQueryBuilder('usuario')

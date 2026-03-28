@@ -24,11 +24,31 @@ import { TipoContactoRepositoryAdapter } from './adapter/tipoContactoRepository.
 import { RolRepositoryAdapter } from './adapter/rolRepository.adapter';
 import { FuncionalidadEntity } from './database/entities/funcionalidad.entity';
 import { SistemaRepositoryAdapter } from './adapter/sistemaRepository.adapter';
+import { SecretsModule } from './secrets/secrets.module';
+import { ConfigModule, ConfigService, ConfigModule as NestConfigModule } from '@nestjs/config';
+import { MetricsModule } from './metrics/metrics.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisStore } from 'connect-redis';
 
 @Module({
     imports: [
         DatabaseModule,
+        SecretsModule,
         HttpServerModule,
+        MetricsModule,
+        ConfigModule,
+        CacheModule.register({
+            isGlobal: true,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => ({
+                isGlobal: true,
+                store: RedisStore,
+                host: configService.get('redis.host') || 'localhost',
+                port: configService.get('redis.port') || '6379',
+                ttl: configService.get('redis.ttl') || '3600', // 1 hora por defecto
+            }),
+        }),
         TypeOrmModule.forFeature([
             ContactoEntity,
             CuentaBancariaEntity,
@@ -44,6 +64,10 @@ import { SistemaRepositoryAdapter } from './adapter/sistemaRepository.adapter';
             UsuarioEntity,
             FuncionalidadEntity,
         ]),
+        NestConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: ['.env.dev', '.env'],
+        }),
     ],
     providers: [
         UsuarioRepositoryAdapter,

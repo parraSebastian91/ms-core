@@ -4,32 +4,20 @@ import { InfraestructureModule } from './infrastructure/Infraestructure.module';
 import { CoreModule } from './core/core.module';
 import { UsuarioRepositoryAdapter } from './infrastructure/adapter/usuarioRepository.adapter';
 import { ConfigModule } from '@nestjs/config';
-import configurations from 'config/configurations';
-import databaseConfig from 'config/database.config';
 import { ContactoRepositoryAdapter } from './infrastructure/adapter/contactoRepository.adapter';
 import { TipoContactoRepositoryAdapter } from './infrastructure/adapter/tipoContactoRepository.adapter';
 import { RolRepositoryAdapter } from './infrastructure/adapter/rolRepository.adapter';
 import { JwtModule } from '@nestjs/jwt';
-
-import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-ioredis';
-import { SistemaRepositoryAdapter} from './infrastructure/adapter/sistemaRepository.adapter';
+import { SistemaRepositoryAdapter } from './infrastructure/adapter/sistemaRepository.adapter';
+import configurations from 'config/configurations';
 
 @Module({
   imports: [
     InfraestructureModule,
     ConfigModule.forRoot({
-      load: [configurations, databaseConfig],
+      load: [configurations],
       isGlobal: true,
-      envFilePath: ['.env']
-
-    }),
-    CacheModule.register({
-      isGlobal: true,
-      store: redisStore,
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT,
-      ttl: 60 * 60, // 1 hora por defecto
+      envFilePath: ['.env','.env.container'],
     }),
     CoreModule.register({
       modules: [InfraestructureModule],
