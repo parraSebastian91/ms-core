@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { IUsuarioAplication } from '../../../core/aplication/usuario/iUsuarioAplication.interface';
+import { IUsuarioAplication } from '../../../core/application/usuario/iUsuarioAplication.interface';
 import { USUARIO_APPLICATION } from '../../../core/core.module';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 

@@ -1,4 +1,5 @@
 
+
 import { Module } from '@nestjs/common';
 import { InfraestructureModule } from './infrastructure/Infraestructure.module';
 import { CoreModule } from './core/core.module';
@@ -17,7 +18,7 @@ import configurations from 'config/configurations';
     ConfigModule.forRoot({
       load: [configurations],
       isGlobal: true,
-      envFilePath: ['.env','.env.container'],
+      envFilePath: ['.env', '.env.container'],
     }),
     CoreModule.register({
       modules: [InfraestructureModule],

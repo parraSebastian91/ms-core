@@ -1,6 +1,7 @@
+import { GetProfileQuery } from "src/core/application/usesCase/userPofileAdministrator/query/getProfile.query";
 import { UserProfileModel } from "../../model/userProfile.model";
 
 
 export interface IUserProfileAdministratorUseCase {
-    ExecuteGetUserProfile(uuid: string): Promise<UserProfileModel>;
+    ExecuteGetUserProfile(query: GetProfileQuery): Promise<UserProfileModel>;
 }
