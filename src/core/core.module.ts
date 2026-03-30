@@ -2,22 +2,16 @@
 https://docs.nestjs.com/modules
 */
 
-import { DynamicModule, Inject, Module, Type } from '@nestjs/common';
-import { IUsuarioRepository } from './domain/puertos/outbound/iUsuarioRepository.interface';
-import { IContactoRepository } from './domain/puertos/outbound/iContactoRepository.interface';
-import { ITipoContactoRepository } from './domain/puertos/outbound/iTipoContactoRepository.interface';
-import { IRolRepository } from './domain/puertos/outbound/iRolRepository.interface';
-import { ISistemaRepository } from './domain/puertos/outbound/ISistemaRepository.interface';
+import { DynamicModule, Module, Type } from '@nestjs/common';
 import { IUserProfileRepository } from './domain/puertos/outbound/IUserProfile.Repository';
+import { UserProfileAdministratorUseCase } from './application/usesCase/userPofileAdministrator/UserProfileAdministrator.usecase';
+import { ApplicationModule } from './application/application.module';
+import { Domain } from 'domain';
+import { DomainModule } from './domain/domain.module';
 
 export type CoreModuleOptions = {
     modules: any[];
     adapters: {
-        usuarioRepository: Type<IUsuarioRepository>;
-        contactoRepository: Type<IContactoRepository>;
-        tipoContactoRepository: Type<ITipoContactoRepository>;
-        rolRepository: Type<IRolRepository>;
-        sistemaRepository: Type<ISistemaRepository>;
         UserProfileRepository: Type<IUserProfileRepository>;
     }
 }
@@ -29,22 +23,23 @@ export class CoreModule {
 
     static register(options: CoreModuleOptions): DynamicModule {
         const { adapters, modules } = options;
-        const { usuarioRepository, contactoRepository, rolRepository, sistemaRepository, UserProfileRepository } = adapters;
-
-        
-
+        const { UserProfileRepository } = adapters;
 
         return {
             module: CoreModule,
             global: true,
             imports: [
                 ...modules,
-            ],
-            providers: [
-                
+                DomainModule,
+                ApplicationModule.register({
+                    modules,
+                    adapters: {
+                        UserProfileRepository
+                    }
+                })
             ],
             exports: [
-                
+                ApplicationModule
             ],
         };
     }

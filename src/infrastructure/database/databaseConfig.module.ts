@@ -1,18 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ContactoEntity } from './entities/contacto.entity';
-import { OrganizacionEntity } from './entities/organizacion.entity';
-import { TipoContactoEntity } from './entities/tipoContacto.entity';
-import { UsuarioEntity } from './entities/usuario.entity';
-import { ModuloEntity } from './entities/modulo.entity';
-import { SistemaEntity } from './entities/sistema.entity';
-import { OrganizacionContactoEntity } from './entities/organizacionContacto.entity';
-import { OrganizacionSistemaEntity } from './entities/organizacionSistema.entity';
-import { PermisoEntity } from './entities/permisos.entity';
-import { RolEntity } from './entities/rol.entity';
-import { RolModuloPermisoEntity } from './entities/rolModuloPermiso.entity';
-import { CuentaBancariaEntity } from './entities/cuentaBancaria.entity';
-import { FuncionalidadEntity } from './entities/funcionalidad.entity';
 import { VaultService } from '../secrets/vault.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SecretsModule } from '../secrets/secrets.module';

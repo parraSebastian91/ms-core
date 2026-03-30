@@ -5,11 +5,10 @@ https://docs.nestjs.com/modules
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { UsuarioController } from './controllers/usuario.controller';
-import { ContactoController } from './controllers/Contacto.controller';
 import { AuthGuard } from './guards/auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
-import { SistemaController } from './controllers/sistema.controller';
+import { UserProfileController } from './controllers/user-profile.controller';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
     imports: [
@@ -19,19 +18,21 @@ import { SistemaController } from './controllers/sistema.controller';
         }),
     ],
     controllers: [
-        UsuarioController,
-        ContactoController,
-        SistemaController
+        UserProfileController
     ],
     providers: [
         AuthGuard,
         PermissionsGuard,
+        RolesGuard,
         // Aplicar AuthGuard globalmente
         {
             provide: APP_GUARD,
             useClass: AuthGuard,
         },
-        // Aplicar PermissionsGuard globalmente después del AuthGuard
+        {
+            provide: APP_GUARD,
+            useClass: RolesGuard,
+        },
         {
             provide: APP_GUARD,
             useClass: PermissionsGuard,

@@ -10,7 +10,7 @@ export default () => ({
     type: 'postgres',
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
-    database: process.env.DATABASE_NAME || 'postgres',
+    database: process.env.DATABASE_NAME || 'core_erp',
     schema: 'core',
     synchronize: true,
     secret_key: process.env.DATABASE_SECRET_KEY || 'database',

@@ -15,6 +15,4 @@ export class UserProfileModel {
     numero_documento: string;
     avatar: string; 
     tipo_contacto: string;
-
-    constructor(){}
 }
