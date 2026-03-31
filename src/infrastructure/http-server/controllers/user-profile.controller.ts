@@ -26,6 +26,17 @@ export class UserProfileController {
         return res.status(200).json(userProfile);
     }
 
+    @Get("profile/navigation/:uuid")
+    @Roles("SUPER_ADMIN")
+    @Permissions("USR_VIEW")
+    async getUserProfileNavigation(
+        @Param("uuid") uuid: string,
+        @Res() res: Response
+    ) {
+        const systemNavigation = await this.userProfileUseCase.ExecuteGetSystemNavigation(uuid);
+        return res.status(200).json(systemNavigation);
+    }
+
 
     
 }

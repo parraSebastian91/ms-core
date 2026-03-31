@@ -2,7 +2,16 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
-@Controller()
-export class CorePortalController { }
+@Controller("core")
+export class CorePortalController { 
+
+
+    @Get("sistema")
+    async getMenu() {
+
+    }
+
+
+}

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
+import { SystemNavigationModel } from "src/core/domain/model/systemNavigation.model";
 import { UserProfileModel } from "src/core/domain/model/userProfile.model";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { DataSource } from "typeorm";
@@ -41,9 +42,72 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         where u.usuario_uuid = $1`;
 
         const result = await this.dataSource.query(query, [uuid]);
-        
+
         if (!result?.length) return null;
 
         return Object.assign(new UserProfileModel(), result[0]);
     }
+
+    async GetSistema(uuid: string): Promise<any> {
+        const configuredSchema = (this.dataSource.options as { schema?: string }).schema || "public";
+        const schema = configuredSchema.replace(/"/g, '""');
+        const query = `SELECT
+                        o.razon_social              AS nombre_organizacion,
+                        o.organizacion_uuid         AS uuid_organizacion,
+                        u.username  			    AS username,
+                        c.nombres				    as nombres,
+                        c.apellido_paterno 		    as apellido_paterno,
+                        c.apellido_materno  	    as apellido_materno,
+                        c.correo 				    as correo,
+                        c.logo_metadata 		    as avatar,
+                        s.nombre                    AS nombre_sistema,
+                        s.path                      AS ruta_sistema,
+                        s.descripcion               AS descripcion_sistema,
+                        s.icono 					as sys_icon,
+                        m.nombre                    AS nombre_modulo,
+                        m.path                      AS ruta_modulo,
+                        m.descripcion               AS descripcion_modulo,
+                        m.icono  				    AS mod_icon,
+                        f.nombre                    AS nombre_funcion,
+                        f.path                      AS ruta_funcion,
+                        f.descripcion               AS descripcion_funcion,
+                        f.icono  				    AS func_icon,
+                        p.per_cod                   AS codigo_permiso,
+                        p.per_nombre                AS nombre_permiso
+                    FROM "${schema}".usuario u
+                        JOIN "${schema}".contacto c
+                            ON c.contacto_id = u.contacto_id
+                        JOIN "${schema}".organizacion_contacto oc
+                            ON oc.contacto_id = c.contacto_id
+                        JOIN "${schema}".organizacion o
+                            ON o.organizacion_id = oc.organizacion_id
+                            AND o.activo = true
+                        JOIN "${schema}".organizacion_sistema os
+                            ON os.organizacion_id = o.organizacion_id
+                        JOIN "${schema}".sistema s
+                            ON s.sistema_id = os.sistema_id
+                            AND s.activo = true
+                        JOIN "${schema}".modulo m
+                            ON m.sistema_id = s.sistema_id
+                            AND m.activo = true
+                        LEFT JOIN "${schema}".funcionalidad f
+                            ON f.modulo_id = m.modulo_id
+                            AND f.activo = true
+                        JOIN "${schema}".usuario_rol ur
+                            ON ur.usuario_id = u.usuario_id
+                        JOIN "${schema}".rol_modulo_permiso rmp
+                            ON rmp.rol_id = ur.rol_id
+                            AND rmp.modulo_id = m.modulo_id
+                        JOIN "${schema}".permiso p
+                            ON p.permiso_id = rmp.permiso_id
+                            AND p.per_activo = true
+                    WHERE u.usuario_uuid = $1
+                    ORDER BY o.razon_social, s.nombre, m.nombre, f.nombre, p.per_cod;`;
+        const result = await this.dataSource.query(query, [uuid]);
+
+        if (!result?.length) return null;
+        return SystemNavigationModel.fromDatabaseRecord(result);
+
+    }
+
 }

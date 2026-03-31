@@ -19,7 +19,18 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
             throw new Error("User profile not found");
         }
         this.logger.log(`User profile retrieved for UUID: ${query.uuid}`);
-        console.log(userProfile);
         return userProfile;
     }
+
+    async ExecuteGetSystemNavigation(uuid: string): Promise<any> {
+        const systemNavigation = await this.userProfileRepository.GetSistema(uuid);
+        if (!systemNavigation) {
+            this.logger.warn(`System navigation not found for UUID: ${uuid}`);
+            throw new Error("System navigation not found");
+        }
+        this.logger.log(`System navigation retrieved for UUID: ${uuid}`);
+        return systemNavigation;
+    }
+
+    
 }
