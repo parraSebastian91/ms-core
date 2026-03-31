@@ -22,10 +22,10 @@ export class UserProfileController {
         @Param("uuid") uuid: string,
         @Res() res: Response
     ) {
-
         const userProfile = await this.userProfileUseCase.ExecuteGetUserProfile({ uuid });
-
         return res.status(200).json(userProfile);
     }
+
+
     
 }
