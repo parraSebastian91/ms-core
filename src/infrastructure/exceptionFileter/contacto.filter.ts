@@ -18,6 +18,8 @@ export class CoreExceptionFilter implements ExceptionFilter {
         let status = 500;
         let message = "Internal server error";
 
+        console.error(`Exception caught: ${exception.message}`, exception.stack);
+
         if(exception instanceof UnauthorizedException) {
             Logger.warn(`UnauthorizedException: ${exception.message}`);
             status = HttpStatus.UNAUTHORIZED;
