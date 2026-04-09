@@ -32,7 +32,6 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         c.redes_sociales,
                         c.tipo_documento,
                         c.numero_documento,
-                        c.logo_metadata as "avatar", 
                         tc.nombre as "tipo_contacto"
                         from 
                             "${schema}".usuario u left join "${schema}".contacto c 
@@ -59,7 +58,6 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         c.apellido_paterno 		    as apellido_paterno,
                         c.apellido_materno  	    as apellido_materno,
                         c.correo 				    as correo,
-                        c.logo_metadata 		    as avatar,
                         s.nombre                    AS nombre_sistema,
                         s.path                      AS ruta_sistema,
                         s.descripcion               AS descripcion_sistema,
