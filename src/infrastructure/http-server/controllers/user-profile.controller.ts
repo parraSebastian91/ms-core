@@ -42,6 +42,19 @@ export class UserProfileController {
         return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccio exitosa", systemNavigation));
     }
 
+    @Get("profile/image/:uuid")
+    @Roles("SUPER_ADMIN")
+    @Permissions("USR_VIEW")
+    async getUserProfileImage(
+        @Param("uuid") uuid: string,
+        @Res() res: Response
+    ) {
+        const userProfileImage = await this.userProfileUseCase.ExecuteGetUserProfileImage(uuid);
+        console.log(userProfileImage);
+        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccio exitosa", userProfileImage));
+    }
+
+
 
 
 }

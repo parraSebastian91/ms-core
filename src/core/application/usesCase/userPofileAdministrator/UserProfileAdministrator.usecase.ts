@@ -32,5 +32,15 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         return systemNavigation;
     }
 
+    async ExecuteGetUserProfileImage(uuid: string): Promise<any> {
+        const userProfileImage = await this.userProfileRepository.GetUserProfileImage(uuid);
+        if (!userProfileImage) {
+            this.logger.warn(`User profile image not found for UUID: ${uuid}`);
+            throw new Error("User profile image not found");
+        }
+        this.logger.log(`User profile image retrieved for UUID: ${uuid}`);
+        return userProfileImage;
+    }
+
     
 }

@@ -2,5 +2,6 @@ import { UserProfileModel } from "../../model/userProfile.model";
 
 export interface IUserProfileRepository {
     getUserProfile(uuid: string): Promise<UserProfileModel | null>;
-    GetSistema(uuid: string): Promise<any>
+    GetSistema(uuid: string): Promise<any>;
+    GetUserProfileImage(uuid: string): Promise<any>;
 }

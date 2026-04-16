@@ -108,4 +108,23 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
     }
 
+    async GetUserProfileImage(uuid: string): Promise<any> {
+
+        const query = ` select 
+                        mv.url_path as path,
+                        mv.metadata 
+                        from 
+                            core.usuario u left join media.media_assets m
+                                on u.usuario_uuid = m.owner_id
+                                and m.status = 'READY'
+                                and m.m_type = 'IMAGE'
+                            left join media.media_variants mv
+                                on mv.asset_id = m.id
+                        where 
+                        u.usuario_uuid = $1`;
+        const result = await this.dataSource.query(query, [uuid]);
+        if (!result?.length) return null;
+        return result[0].avatar;
+    }
+
 }
