@@ -3,6 +3,8 @@ import { IUserProfileAdministratorUseCase } from "../../../domain/puertos/inboun
 import { UserProfileModel } from "../../../domain/model/userProfile.model";
 import { GetProfileQuery } from "./query/getProfile.query";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
+import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
+
 
 @Injectable()
 export class UserProfileAdministratorUseCase implements IUserProfileAdministratorUseCase {
@@ -32,7 +34,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         return systemNavigation;
     }
 
-    async ExecuteGetUserProfileImage(uuid: string): Promise<any> {
+    async ExecuteGetUserProfileImage(uuid: string): Promise<ProfileImageModel[]> {
         const userProfileImage = await this.userProfileRepository.GetUserProfileImage(uuid);
         if (!userProfileImage) {
             this.logger.warn(`User profile image not found for UUID: ${uuid}`);
@@ -42,5 +44,14 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         return userProfileImage;
     }
 
-    
+    async ExecuteUpdateUserProfile(uuid: string, data: any): Promise<any> {
+        const updatedUserProfile = await this.userProfileRepository.UpdateUserProfile(uuid, data);
+        if (!updatedUserProfile) {
+            this.logger.warn(`Failed to update user profile for UUID: ${uuid}`);
+            throw new Error("Failed to update user profile");
+        }
+        this.logger.log(`User profile updated for UUID: ${uuid}`);
+        return updatedUserProfile;
+    }
+
 }

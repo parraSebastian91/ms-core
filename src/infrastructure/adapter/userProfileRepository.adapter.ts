@@ -1,13 +1,16 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { SystemNavigationModel } from "src/core/domain/model/systemNavigation.model";
 import { UserProfileModel } from "src/core/domain/model/userProfile.model";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { DataSource } from "typeorm";
+import { ProfileImageQueryResponse } from "../database/entities/profileImage.queryResponse";
+import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
+import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 
 @Injectable()
 export class UserProfileRepositoryAdapter implements IUserProfileRepository {
-
+    private readonly logger = new Logger(UserProfileRepositoryAdapter.name);
     constructor(
         @InjectDataSource()
         private readonly dataSource: DataSource
@@ -108,9 +111,10 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
     }
 
-    async GetUserProfileImage(uuid: string): Promise<any> {
-
+    async GetUserProfileImage(uuid: string): Promise<ProfileImageModel[]> {
+        this.logger.log(`Fetching user profile image for UUID: ${uuid}`);
         const query = ` select 
+                        m.category,
                         mv.url_path as path,
                         mv.metadata 
                         from 
@@ -122,9 +126,26 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                                 on mv.asset_id = m.id
                         where 
                         u.usuario_uuid = $1`;
-        const result = await this.dataSource.query(query, [uuid]);
-        if (!result?.length) return null;
-        return result[0].avatar;
+        const result = await this.dataSource.query<ProfileImageQueryResponse[]>(query, [uuid]);
+        if (!result[0]?.metadata) {
+            this.logger.warn(`No profile image found for UUID: ${uuid}`);
+            throw new ImageProfileError(`No profile image found for UUID: ${uuid}`);
+        }
+        return ProfileImageQueryResponse.toDomainModel(result);
     }
 
+    async UpdateUserProfile(uuid: string, data: UserProfileModel): Promise<UserProfileModel> {
+        this.logger.log(`Updating user profile for UUID: ${uuid}`);
+        const query = `UPDATE core.contacto
+                       SET nombres = $1, apellido_paterno = $2, apellido_materno = $3, direccion = $4, celular = $5, correo = $6
+                       WHERE contacto_id = (SELECT contacto_id FROM core.usuario WHERE usuario_uuid = $7)
+                       RETURNING *`;
+        const values = [data.nombres, data.apellido_paterno, data.apellido_materno, data.direccion, data.celular, data.correo, uuid];
+        const result = await this.dataSource.query<UserProfileModel[]>(query, values);
+        if (!result[0]) {
+            this.logger.warn(`Failed to update user profile for UUID: ${uuid}`);
+            throw new Error("Failed to update user profile");
+        }
+        return result[0];
+    }
 }

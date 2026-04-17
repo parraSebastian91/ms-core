@@ -7,6 +7,7 @@ import { QueryFailedError, TypeORMError } from "typeorm";
 import { UserExistError } from "src/core/share/errors/usuarioExistError.error";
 import { UserNotFoundError } from "src/core/share/errors/UserNotFound.error";
 import { UpdateError } from "src/core/share/errors/Update.error";
+import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -18,7 +19,7 @@ export class CoreExceptionFilter implements ExceptionFilter {
         let status = 500;
         let message = "Internal server error";
 
-        console.error(`Exception caught: ${exception.message}`, exception.stack);
+        
 
         if(exception instanceof UnauthorizedException) {
             Logger.warn(`UnauthorizedException: ${exception.message}`);
@@ -69,7 +70,13 @@ export class CoreExceptionFilter implements ExceptionFilter {
             status = HttpStatus.BAD_REQUEST;
             message = exception.message;
         }
+        else if (exception instanceof ImageProfileError) {
+            Logger.error(`ImageProfileError: ${exception.message}`, exception.stack);
+            status = HttpStatus.NOT_FOUND;
+            message = exception.message;
+        }
         else {
+            console.error(`Exception caught: ${exception.message}`, exception.stack);
             Logger.error(`Unexpected error: ${exception.message}`, exception.stack);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             message = "Internal server error";

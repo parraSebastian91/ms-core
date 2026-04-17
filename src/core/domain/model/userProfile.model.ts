@@ -1,4 +1,3 @@
-
 export class UserProfileModel {
     username: string;
     ingreso: Date;
@@ -13,6 +12,23 @@ export class UserProfileModel {
     redes_sociales: string;
     tipo_documento: string;
     numero_documento: string;
-    avatar: string; 
     tipo_contacto: string;
+
+    constructor(
+    ) {
+        this.username = "";
+        this.ingreso = new Date();
+        this.activo = false;
+        this.nombres = "";
+        this.apellido_paterno = "";
+        this.apellido_materno = "";
+        this.direccion = "";
+        this.celular = "";
+        this.correo = "";
+        this.fecha_nacimiento = new Date();
+        this.redes_sociales = "";
+        this.tipo_documento = "";
+        this.numero_documento = "";
+        this.tipo_contacto = "";
+    }
 }

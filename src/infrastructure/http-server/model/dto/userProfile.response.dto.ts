@@ -34,7 +34,6 @@ export class UserProfileDTO {
         userProfileDTO.redes_sociales = userProfile.redes_sociales;
         userProfileDTO.tipo_documento = userProfile.tipo_documento;
         userProfileDTO.numero_documento = userProfile.numero_documento;
-        userProfileDTO.avatar = userProfile.avatar;
         userProfileDTO.tipo_contacto = userProfile.tipo_contacto;
         return userProfileDTO;
     }

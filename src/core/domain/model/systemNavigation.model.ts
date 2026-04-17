@@ -84,7 +84,6 @@ export class SystemNavigationModel {
                 sistema.descripcion = row.descripcion_sistema;
                 sistema.modulos = [];
                 sistema.icono = row.sys_icon;
-                console.log(`Sistema encontrado: ${sistema.icono}`);
                 sistemaMap.set(row.nombre_sistema, sistema);
                 organizacion.sistemas = organizacion.sistemas || [];
                 organizacion.sistemas.push(sistema);

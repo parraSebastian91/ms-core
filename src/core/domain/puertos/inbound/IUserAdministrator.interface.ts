@@ -6,4 +6,5 @@ export interface IUserProfileAdministratorUseCase {
     ExecuteGetUserProfile(query: GetProfileQuery): Promise<UserProfileModel>;
     ExecuteGetSystemNavigation(uuid: string): Promise<any>;
     ExecuteGetUserProfileImage(uuid: string): Promise<any>;
+    ExecuteUpdateUserProfile(uuid: string, data: UserProfileModel): Promise<any>;
 }

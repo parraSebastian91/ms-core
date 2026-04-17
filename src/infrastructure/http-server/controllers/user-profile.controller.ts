@@ -2,7 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, HttpStatus, Inject, Param, Query, Res, UseFilters } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Inject, Param, Put, Query, Res, UseFilters } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Roles } from '../decorators/roles.decorator';
 import { Permissions } from '../decorators/permissions.decorator';
@@ -10,6 +10,7 @@ import { IUserProfileAdministratorUseCase } from 'src/core/domain/puertos/inboun
 import { ApiResponse } from '../model/api-response.model';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
+import { UserProfileReqResDTO } from '../model/dto/userProfile.request.dto';
 
 @Controller("usuario")
 @UseFilters(CoreExceptionFilter)
@@ -38,8 +39,7 @@ export class UserProfileController {
         @Res() res: Response
     ) {
         const systemNavigation = await this.userProfileUseCase.ExecuteGetSystemNavigation(uuid);
-        console.log(systemNavigation);
-        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccio exitosa", systemNavigation));
+        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", systemNavigation));
     }
 
     @Get("profile/image/:uuid")
@@ -50,8 +50,20 @@ export class UserProfileController {
         @Res() res: Response
     ) {
         const userProfileImage = await this.userProfileUseCase.ExecuteGetUserProfileImage(uuid);
-        console.log(userProfileImage);
-        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccio exitosa", userProfileImage));
+        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", userProfileImage));
+    }
+
+    @Put("profile/:uuid")
+    @Roles("SUPER_ADMIN")
+    @Permissions("USR_VIEW")
+    async updateUserProfileImage(
+        @Body() body: any,
+        @Param("uuid") uuid: string,
+        @Res() res: Response
+    ) {
+        const userProfifleModel = UserProfileReqResDTO.toModel(body);
+        const updateResult = await this.userProfileUseCase.ExecuteUpdateUserProfile(uuid, userProfifleModel);
+        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", updateResult));
     }
 
 
