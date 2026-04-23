@@ -11,6 +11,7 @@ import { ApiResponse } from '../model/api-response.model';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
 import { UserProfileReqResDTO } from '../model/dto/userProfile.request.dto';
+import { UserOrganizacionProfileDTO } from '../model/dto/UserOrganizacionProfile.dto';
 
 @Controller("usuario")
 @UseFilters(CoreExceptionFilter)
@@ -64,6 +65,17 @@ export class UserProfileController {
         const userProfifleModel = UserProfileReqResDTO.toModel(body);
         const updateResult = await this.userProfileUseCase.ExecuteUpdateUserProfile(uuid, userProfifleModel);
         return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", updateResult));
+    }
+
+    @Get("profile/organization/:uuid")
+    @Roles("SUPER_ADMIN")
+    @Permissions("USR_VIEW")
+    async getUserOrganizacionProfile(
+        @Param("uuid") uuid: string,
+        @Res() res: Response
+    ) {
+        const userOrganizacionProfile = await this.userProfileUseCase.ExecuteGetUserOrganizacionByUsuario(uuid);
+        return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", UserOrganizacionProfileDTO.fromModelArray(userOrganizacionProfile)));
     }
 
 

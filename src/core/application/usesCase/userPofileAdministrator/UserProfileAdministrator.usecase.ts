@@ -4,6 +4,7 @@ import { UserProfileModel } from "../../../domain/model/userProfile.model";
 import { GetProfileQuery } from "./query/getProfile.query";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
+import { UserOrganizacionProfileModel } from "src/core/domain/model/userOrganizacionProfile.model";
 
 
 @Injectable()
@@ -52,6 +53,16 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         }
         this.logger.log(`User profile updated for UUID: ${uuid}`);
         return updatedUserProfile;
+    }
+
+    async ExecuteGetUserOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
+        const userOrganizacionProfile = await this.userProfileRepository.getOrganizacionByUsuario(uuid);
+        if (!userOrganizacionProfile) {
+            this.logger.warn(`User organization profile not found for UUID: ${uuid}`);
+            throw new Error("User organization profile not found");
+        }
+        this.logger.log(`User organization profile retrieved for UUID: ${uuid}`);
+        return userOrganizacionProfile;
     }
 
 }

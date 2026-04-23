@@ -12,6 +12,7 @@ class Modulo {
     descripcion: string;
     icono: string;
     funcionalidades: Funcionalidad[];
+    organizacionId: string[];
 }
 
 class Funcionalidad {
@@ -27,54 +28,20 @@ class Permiso {
     nombre: string;
 }
 
-class Organizacion {
-    nombre: string;
-    uuid: string;
-    sistemas: Sistema[];
-}
-
-class Contacto {
-    nombres: string;
-    usuario: string;
-    apellidoPaterno: string;
-    apellidoMaterno: string;
-    correo: string;
-    avatar: string;
-}
-
 export class SystemNavigationModel {
-    organizacion: Organizacion[];
-    contacto: Contacto;
+    sistemas: Sistema[] = [];
 
     static fromDatabaseRecord(record: any[]): SystemNavigationModel {
 
         const model = new SystemNavigationModel();
 
-        const contacto = new Contacto();
-        contacto.usuario = record[0].username;
-        contacto.nombres = record[0].nombres;
-        contacto.apellidoPaterno = record[0].apellido_paterno;
-        contacto.apellidoMaterno = record[0].apellido_materno;
-        contacto.correo = record[0].correo;
-        contacto.avatar = record[0].avatar;
-        model.contacto = contacto;
-
-
-        const organizacionMap = new Map<string, Organizacion>();
         const sistemaMap = new Map<string, Sistema>();
         const moduloMap = new Map<string, Modulo>();
         const funcionalidadMap = new Map<string, Funcionalidad>();
         const permisoMap = new Map<string, string>();
 
         record.forEach(row => {
-            let organizacion = organizacionMap.get(row.uuid_organizacion);
 
-            if (!organizacion) {
-                organizacion = new Organizacion();
-                organizacion.nombre = row.nombre_organizacion;
-                organizacion.uuid = row.uuid_organizacion;
-                organizacionMap.set(row.uuid_organizacion, organizacion);
-            }
 
             let sistema = sistemaMap.get(row.nombre_sistema);
             if (!sistema) {
@@ -85,8 +52,6 @@ export class SystemNavigationModel {
                 sistema.modulos = [];
                 sistema.icono = row.sys_icon;
                 sistemaMap.set(row.nombre_sistema, sistema);
-                organizacion.sistemas = organizacion.sistemas || [];
-                organizacion.sistemas.push(sistema);
             }
 
             let modulo = moduloMap.get(row.nombre_modulo);
@@ -97,8 +62,13 @@ export class SystemNavigationModel {
                 modulo.descripcion = row.descripcion_modulo;
                 modulo.funcionalidades = [];
                 modulo.icono = row.mod_icon;
+                modulo.organizacionId = [row.organizacion_identity];
                 moduloMap.set(row.nombre_modulo, modulo);
                 sistema.modulos.push(modulo);
+            } else {
+                if (!modulo.organizacionId.includes(row.organizacion_identity)) {
+                    modulo.organizacionId.push(row.organizacion_identity)
+                }
             }
 
             let funcionalidad = funcionalidadMap.get(row.nombre_funcion);
@@ -117,12 +87,11 @@ export class SystemNavigationModel {
             if (!permiso) {
                 funcionalidad.permisos.push(row.codigo_permiso);
             }
-
+            model.sistemas = Array.from(sistemaMap.values());
         });
 
-        model.organizacion = Array.from(organizacionMap.values());
 
-
+        console.log("Constructed SystemNavigationModel:", model);
         return model;
 
     }

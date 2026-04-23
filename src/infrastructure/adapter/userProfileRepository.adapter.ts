@@ -7,6 +7,7 @@ import { DataSource } from "typeorm";
 import { ProfileImageQueryResponse } from "../database/entities/profileImage.queryResponse";
 import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
+import { UserOrganizacionProfileModel } from "src/core/domain/model/userOrganizacionProfile.model";
 
 @Injectable()
 export class UserProfileRepositoryAdapter implements IUserProfileRepository {
@@ -54,13 +55,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const configuredSchema = (this.dataSource.options as { schema?: string }).schema || "public";
         const schema = configuredSchema.replace(/"/g, '""');
         const query = `SELECT
-                        o.razon_social              AS nombre_organizacion,
-                        o.organizacion_uuid         AS uuid_organizacion,
-                        u.username  			    AS username,
-                        c.nombres				    as nombres,
-                        c.apellido_paterno 		    as apellido_paterno,
-                        c.apellido_materno  	    as apellido_materno,
-                        c.correo 				    as correo,
+                        o.organizacion_uuid         AS organizacion_identity,
                         s.nombre                    AS nombre_sistema,
                         s.path                      AS ruta_sistema,
                         s.descripcion               AS descripcion_sistema,
@@ -105,7 +100,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                     WHERE u.usuario_uuid = $1
                     ORDER BY o.razon_social, s.nombre, m.nombre, f.nombre, p.per_cod;`;
         const result = await this.dataSource.query(query, [uuid]);
-
+        console.log("Navigation query result:", result);
         if (!result?.length) return null;
         return SystemNavigationModel.fromDatabaseRecord(result);
 
@@ -147,5 +142,28 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
             throw new Error("Failed to update user profile");
         }
         return result[0];
+    }
+
+    async getOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
+        const query = ` select 
+                            CONCAT(c.nombres, ' ',c.apellido_paterno, ' ', c.apellido_materno) as nombre_contacto,
+                            oc.cargo,
+                            o.razon_social,
+                            o.organizacion_uuid
+                        from 
+                            core.usuario u left join core.contacto c 
+                                on u.contacto_id = c.contacto_id 
+                            join core.organizacion_contacto oc
+                                on oc.contacto_id = c.contacto_id
+                            join core.organizacion o
+                                on oc.organizacion_id = o.organizacion_id
+                        where u.usuario_uuid = $1`;
+        const values = [uuid];
+        const result = await this.dataSource.query<UserOrganizacionProfileModel[]>(query, values);
+        if (!result[0]) {
+            this.logger.warn(`Failed to fetch organization profile for UUID: ${uuid}`);
+            throw new Error("Failed to fetch organization profile");
+        }
+        return result;
     }
 }
