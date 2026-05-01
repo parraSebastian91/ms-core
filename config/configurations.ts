@@ -30,6 +30,13 @@ export default () => ({
     access_secret: process.env.JWT_ACCESS_SECRET || 'jwt_access_secret',
     access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN || '3600',
     admin_expires_in: process.env.JWT_ACCESS_ADMIN_EXPIRES_IN || '7200',
-  }
+  },
+  rabbitmq: {
+    host: process.env.RABBITMQ_HOST || 'rabbitmq',
+    port: parseInt(process.env.RABBITMQ_PORT ?? '5672', 10) || 5672,
+    user: process.env.RABBITMQ_USER || 'core',
+    pass: process.env.RABBITMQ_PASS || 'guest',
+    queue: process.env.RABBITMQ_QUEUE || 'object_queue',
+  },
 });
 

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { VaultService } from '../secrets/vault.service';
+import { VaultService } from '../../../secrets/vault.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SecretsModule } from '../secrets/secrets.module';
+import { SecretsModule } from '../../../secrets/secrets.module';
 
 @Module({
     imports: [

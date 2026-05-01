@@ -6,7 +6,7 @@ import { CoreModule } from './core/core.module';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import configurations from 'config/configurations';
-import { UserProfileRepositoryAdapter } from './infrastructure/adapter/userProfileRepository.adapter';
+import { UserProfileRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/userProfileRepository.adapter';
 
 @Module({
   imports: [

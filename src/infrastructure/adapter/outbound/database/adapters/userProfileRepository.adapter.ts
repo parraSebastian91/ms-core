@@ -4,7 +4,7 @@ import { SystemNavigationModel } from "src/core/domain/model/systemNavigation.mo
 import { UserProfileModel } from "src/core/domain/model/userProfile.model";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { DataSource } from "typeorm";
-import { ProfileImageQueryResponse } from "../database/entities/profileImage.queryResponse";
+import { ProfileImageQueryResponse } from "../entities/profileImage.queryResponse";
 import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 import { UserOrganizacionProfileModel } from "src/core/domain/model/userOrganizacionProfile.model";
