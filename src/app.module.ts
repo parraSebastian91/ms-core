@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import configurations from 'config/configurations';
 import { UserProfileRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/userProfileRepository.adapter';
+import { QueueClientAdapter } from './infrastructure/adapter/inbound/queue/queue-client.adapter';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UserProfileRepositoryAdapter } from './infrastructure/adapter/outbound/
       modules: [InfraestructureModule],
       adapters: {
           UserProfileRepository: UserProfileRepositoryAdapter,
+          QueueClientAdapter: QueueClientAdapter,
       },
     }),
     JwtModule.register({

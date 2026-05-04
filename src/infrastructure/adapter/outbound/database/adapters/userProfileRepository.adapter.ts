@@ -100,7 +100,6 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                     WHERE u.usuario_uuid = $1
                     ORDER BY o.razon_social, s.nombre, m.nombre, f.nombre, p.per_cod;`;
         const result = await this.dataSource.query(query, [uuid]);
-        console.log("Navigation query result:", result);
         if (!result?.length) return null;
         return SystemNavigationModel.fromDatabaseRecord(result);
 

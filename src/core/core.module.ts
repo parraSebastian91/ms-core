@@ -8,11 +8,13 @@ import { UserProfileAdministratorUseCase } from './application/usesCase/userPofi
 import { ApplicationModule } from './application/application.module';
 import { Domain } from 'domain';
 import { DomainModule } from './domain/domain.module';
+import { IMessagePublisher } from './domain/puertos/inbound/message.publisher.interface';
 
 export type CoreModuleOptions = {
     modules: any[];
     adapters: {
         UserProfileRepository: Type<IUserProfileRepository>;
+        QueueClientAdapter: Type<IMessagePublisher>,
     }
 }
 
@@ -23,7 +25,10 @@ export class CoreModule {
 
     static register(options: CoreModuleOptions): DynamicModule {
         const { adapters, modules } = options;
-        const { UserProfileRepository } = adapters;
+        const { 
+            UserProfileRepository,
+            QueueClientAdapter 
+        } = adapters;
 
         return {
             module: CoreModule,
