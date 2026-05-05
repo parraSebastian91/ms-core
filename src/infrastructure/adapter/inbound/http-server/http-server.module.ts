@@ -9,6 +9,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { UserProfileController } from './controllers/user-profile.controller';
 import { RolesGuard } from './guards/roles.guard';
+import { WebhookController } from './controllers/webhook.controller';
 
 @Module({
     imports: [
@@ -18,7 +19,8 @@ import { RolesGuard } from './guards/roles.guard';
         }),
     ],
     controllers: [
-        UserProfileController
+        UserProfileController,
+        WebhookController
     ],
     providers: [
         AuthGuard,
