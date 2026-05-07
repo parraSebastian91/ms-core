@@ -13,7 +13,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         private readonly dataSource: DataSource
     ) { }
 
-    async publishFactura(factura: FacturaModel): Promise<boolean> {
+    async publishFactura(factura: FacturaModel): Promise<boolean | string> {
 
         this.logger.log(`Publicando factura: ${JSON.stringify(factura)}`);
 

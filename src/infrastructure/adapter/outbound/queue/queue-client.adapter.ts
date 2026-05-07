@@ -44,7 +44,7 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
   async publish(exchange: string, routingKey: string, payload: unknown, options?: { persistent?: boolean; headers?: Record<string, unknown>; exchangeType?: 'direct' | 'topic' | 'fanout' | 'headers'; }): Promise<void> {
     const startedAt = Date.now();
     this.logger.log(`[START] Publicar Rabbit | exchange=${exchange} | routingKey=${routingKey}`);
-    
+
     try {
       if (!this.amqpChannel) {
         await this.connectAmqp();
@@ -56,7 +56,14 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
       const exchangeType = options?.exchangeType ?? 'topic';
       await this.amqpChannel.assertExchange(exchange, exchangeType, { durable: true });
 
-      const body = Buffer.from(JSON.stringify(payload));
+      
+      const packet = {
+        pattern: routingKey,
+        data: payload,
+      }
+      
+      const body = Buffer.from(JSON.stringify(packet));
+
       const ok = this.amqpChannel.publish(exchange, routingKey, body, {
         persistent: options?.persistent ?? true,
         contentType: 'application/json',

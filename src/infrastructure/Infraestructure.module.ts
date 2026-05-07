@@ -54,16 +54,23 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
                     const port = configService.get<number>('rabbitmq.port') || 5672;
                     const user = configService.get<string>('rabbitmq.user') || 'core';
                     const pass = configService.get<string>('rabbitmq.pass') || 'core-123';
-                    const queue = configService.get<string>('rabbitmq.queue') || 'object_queue';
+                    const queue = configService.get<string>('rabbitmq.queue') || 'notify_queue';
+                    const exchange = configService.get<string>('rabbitmq.exchange') || 'storage_notifications_exchange';
+                    const routingKey = configService.get<string>('rabbitmq.routingKey') || 'dte.process.notification';
 
                     return {
                         transport: Transport.RMQ,
                         options: {
                             urls: [`amqp://${user}:${pass}@${host}:${port}`],
                             queue,
+                            exchange,
+                            exchangeType: 'topic',
+                            routingKey,
                             queueOptions: {
                                 durable: true,
                             },
+                            noAck: true,    // publisher no necesita ACK
+                            isGlobal: false,
                         },
                     };
                 },
