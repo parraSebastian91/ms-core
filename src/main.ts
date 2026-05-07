@@ -30,37 +30,8 @@ async function preloadVaultToEnv() {
     }
   }
 }
-
-async function verifyRabbitMqConnection() {
-  const host = process.env.RABBITMQ_HOST || 'rabbitmq';
-  const port = process.env.RABBITMQ_PORT || '5672';
-  const user = process.env.RABBITMQ_USER || 'core';
-  const pass = process.env.RABBITMQ_PASS || 'core-123';
-  const queue = process.env.RABBITMQ_QUEUE || 'object_queue';
-
-  const amqpUrl = `amqp://${user}:${pass}@${host}:${port}`;
-  let connection: any;
-  let channel: any;
-
-  try {
-    connection = await connect(amqpUrl);
-    channel = await connection.createChannel();
-    await channel.assertQueue(queue, { durable: true });
-    console.log(`RabbitMQ connected and queue verified: ${queue}`);
-  } catch (error) {
-    console.error(
-      `RabbitMQ connection failed (url=${amqpUrl}, queue=${queue})`,
-      error,
-    );
-  } finally {
-    await channel?.close();
-    await connection?.close();
-  }
-}
-
 async function bootstrap() {
   await preloadVaultToEnv();
-  await verifyRabbitMqConnection();
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(process.env.PORT ?? 3000).then(() => {

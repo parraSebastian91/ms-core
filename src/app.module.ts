@@ -7,7 +7,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import configurations from 'config/configurations';
 import { UserProfileRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/userProfileRepository.adapter';
-import { QueueClientAdapter } from './infrastructure/adapter/inbound/queue/queue-client.adapter';
+import { QueueClientAdapter } from './infrastructure/adapter/outbound/queue/queue-client.adapter';
+import { FacturaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/facturaRepositorry.adapter';
 
 @Module({
   imports: [
@@ -19,8 +20,9 @@ import { QueueClientAdapter } from './infrastructure/adapter/inbound/queue/queue
     CoreModule.register({
       modules: [InfraestructureModule],
       adapters: {
-          UserProfileRepository: UserProfileRepositoryAdapter,
-          QueueClientAdapter: QueueClientAdapter,
+        UserProfileRepository: UserProfileRepositoryAdapter,
+        FacturaManagerRepository: FacturaRepositoryAdapter,
+        QueueClientAdapter: QueueClientAdapter,
       },
     }),
     JwtModule.register({

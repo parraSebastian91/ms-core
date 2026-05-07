@@ -23,7 +23,7 @@ import { SecretsModule } from '../../../secrets/secrets.module';
                     entities: [__dirname + '/entities/*.entity{.ts,.js}'],
                     synchronize: false,  // ← NO usar true en producción
                     // ✅ ACTIVAR LOGGING COMPLETO
-                    logging: false,  // O más específico:  ['query', 'error', 'schema', 'warn', 'info', 'log']
+                    logging: true,  // O más específico:  ['query', 'error', 'schema', 'warn', 'info', 'log']
                     logger: 'advanced-console',  // O 'debug', 'simple-console'
 
                     // ✅ Ver todas las queries

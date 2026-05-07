@@ -35,8 +35,9 @@ export default () => ({
     host: process.env.RABBITMQ_HOST || 'rabbitmq',
     port: parseInt(process.env.RABBITMQ_PORT ?? '5672', 10) || 5672,
     user: process.env.RABBITMQ_USER || 'core',
-    pass: process.env.RABBITMQ_PASS || 'guest',
-    queue: process.env.RABBITMQ_QUEUE || 'object_queue',
+    pass: process.env.RABBITMQ_PASS || 'core-123',
+    storage_notifications_exchange: process.env.RABBITMQ_STORAGE_NOTIFICATIONS_EXCHANGE || 'storage_notifications_exchange',
+    notifyRoutingKey: process.env.RABBITMQ_NOTIFY_ROUTING_KEY || 'dte.process.notification',
   },
 });
 

@@ -10,6 +10,7 @@ import { PermissionsGuard } from './guards/permissions.guard';
 import { UserProfileController } from './controllers/user-profile.controller';
 import { RolesGuard } from './guards/roles.guard';
 import { WebhookController } from './controllers/webhook.controller';
+import { HealthcheckController } from './controllers/healthcheck.controller';
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { WebhookController } from './controllers/webhook.controller';
     ],
     controllers: [
         UserProfileController,
-        WebhookController
+        WebhookController,
+        HealthcheckController
     ],
     providers: [
         AuthGuard,

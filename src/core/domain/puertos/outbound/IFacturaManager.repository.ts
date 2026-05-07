@@ -1,5 +1,5 @@
 import { FacturaModel } from "../../model/factura.model";
 
-export interface IFacturaManager {
-    publishFactura(factura: FacturaModel): Promise<void>;
+export interface IFacturaManagerRepository {
+    publishFactura(factura: FacturaModel): Promise<boolean> ;
 }

@@ -9,11 +9,13 @@ import { ApplicationModule } from './application/application.module';
 import { Domain } from 'domain';
 import { DomainModule } from './domain/domain.module';
 import { IMessagePublisher } from './domain/puertos/inbound/message.publisher.interface';
+import { IFacturaManagerRepository } from './domain/puertos/outbound/IFacturaManager.repository';
 
 export type CoreModuleOptions = {
     modules: any[];
     adapters: {
         UserProfileRepository: Type<IUserProfileRepository>;
+        FacturaManagerRepository: Type<IFacturaManagerRepository>;
         QueueClientAdapter: Type<IMessagePublisher>,
     }
 }
@@ -25,9 +27,10 @@ export class CoreModule {
 
     static register(options: CoreModuleOptions): DynamicModule {
         const { adapters, modules } = options;
-        const { 
+        const {
             UserProfileRepository,
-            QueueClientAdapter 
+            FacturaManagerRepository,
+            QueueClientAdapter
         } = adapters;
 
         return {
@@ -39,7 +42,9 @@ export class CoreModule {
                 ApplicationModule.register({
                     modules,
                     adapters: {
-                        UserProfileRepository
+                        UserProfileRepository,
+                        FacturaManagerRepository,
+                        QueueClientAdapter
                     }
                 })
             ],

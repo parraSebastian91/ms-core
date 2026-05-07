@@ -13,6 +13,11 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RedisStore } from 'connect-redis';
 import { UserProfileRepositoryAdapter } from './adapter/outbound/database/adapters/userProfileRepository.adapter';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { FacturaRepositoryAdapter } from './adapter/outbound/database/adapters/facturaRepositorry.adapter';
+import { MESSAGE_PUBLISHER } from 'src/core/domain/puertos/inbound/message.publisher.interface';
+import { QueueClientAdapter } from './adapter/outbound/queue/queue-client.adapter';
+
+const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
 @Module({
     imports: [
@@ -21,7 +26,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         HttpServerModule,
         MetricsModule,
         ConfigModule,
-
         CacheModule.register({
             isGlobal: true,
             imports: [ConfigModule],
@@ -42,7 +46,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         }),
         ClientsModule.registerAsync([
             {
-                name: 'OBJECT_SERVICE',
+                name: NOTIFICATION_MODULE,
                 imports: [ConfigModule],
                 inject: [ConfigService],
                 useFactory: (configService: ConfigService) => {
@@ -67,10 +71,18 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         ]),
     ],
     providers: [
-        UserProfileRepositoryAdapter
+        UserProfileRepositoryAdapter,
+        FacturaRepositoryAdapter,
+        QueueClientAdapter,
+        {
+            provide: MESSAGE_PUBLISHER,
+            useExisting: QueueClientAdapter,
+        },
     ],
     exports: [
-        UserProfileRepositoryAdapter
+        UserProfileRepositoryAdapter,
+        FacturaRepositoryAdapter,
+        QueueClientAdapter,
     ],
 })
 export class InfraestructureModule { }
