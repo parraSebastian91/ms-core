@@ -4,12 +4,11 @@ https://docs.nestjs.com/modules
 
 import { DynamicModule, Module, Type } from '@nestjs/common';
 import { IUserProfileRepository } from './domain/puertos/outbound/IUserProfile.Repository';
-import { UserProfileAdministratorUseCase } from './application/usesCase/userPofileAdministrator/UserProfileAdministrator.usecase';
 import { ApplicationModule } from './application/application.module';
-import { Domain } from 'domain';
 import { DomainModule } from './domain/domain.module';
 import { IMessagePublisher } from './domain/puertos/inbound/message.publisher.interface';
 import { IFacturaManagerRepository } from './domain/puertos/outbound/IFacturaManager.repository';
+import { IWorkTeamRepository } from './domain/puertos/outbound/IWorkTeam.rerpository';
 
 export type CoreModuleOptions = {
     modules: any[];
@@ -17,6 +16,7 @@ export type CoreModuleOptions = {
         UserProfileRepository: Type<IUserProfileRepository>;
         FacturaManagerRepository: Type<IFacturaManagerRepository>;
         QueueClientAdapter: Type<IMessagePublisher>,
+        WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
     }
 }
 
@@ -30,7 +30,8 @@ export class CoreModule {
         const {
             UserProfileRepository,
             FacturaManagerRepository,
-            QueueClientAdapter
+            QueueClientAdapter,
+            WorkTeamRepositoryAdapter
         } = adapters;
 
         return {
@@ -44,7 +45,8 @@ export class CoreModule {
                     adapters: {
                         UserProfileRepository,
                         FacturaManagerRepository,
-                        QueueClientAdapter
+                        QueueClientAdapter,
+                        WorkTeamRepositoryAdapter
                     }
                 })
             ],

@@ -13,9 +13,10 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RedisStore } from 'connect-redis';
 import { UserProfileRepositoryAdapter } from './adapter/outbound/database/adapters/userProfileRepository.adapter';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { FacturaRepositoryAdapter } from './adapter/outbound/database/adapters/facturaRepositorry.adapter';
+import { FacturaRepositoryAdapter } from './adapter/outbound/database/adapters/facturaRepository.adapter';
 import { MESSAGE_PUBLISHER } from 'src/core/domain/puertos/inbound/message.publisher.interface';
 import { QueueClientAdapter } from './adapter/outbound/queue/queue-client.adapter';
+import { WorkTeamRepositoryAdapter } from './adapter/outbound/database/adapters/workTeamRepositori.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -81,6 +82,7 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         UserProfileRepositoryAdapter,
         FacturaRepositoryAdapter,
         QueueClientAdapter,
+        WorkTeamRepositoryAdapter,
         {
             provide: MESSAGE_PUBLISHER,
             useExisting: QueueClientAdapter,
@@ -90,6 +92,7 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         UserProfileRepositoryAdapter,
         FacturaRepositoryAdapter,
         QueueClientAdapter,
+        WorkTeamRepositoryAdapter,
     ],
 })
 export class InfraestructureModule { }

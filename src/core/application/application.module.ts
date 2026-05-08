@@ -9,6 +9,7 @@ import { IFacturaManagerRepository } from '../domain/puertos/outbound/IFacturaMa
 import { FacturaManagerUseCase } from './usesCase/facturaManager/facturaManager.useCase';
 import { IMessagePublisher } from '../domain/puertos/inbound/message.publisher.interface';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { IWorkTeamRepository } from '../domain/puertos/outbound/IWorkTeam.rerpository';
 
 export type ApplicationModuleOptions = {
     modules: any[];
@@ -16,6 +17,8 @@ export type ApplicationModuleOptions = {
         UserProfileRepository: Type<IUserProfileRepository>;
         FacturaManagerRepository: Type<IFacturaManagerRepository>;
         QueueClientAdapter: Type<IMessagePublisher>;
+        WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
+
     }
 }
 
@@ -31,7 +34,8 @@ export class ApplicationModule {
         const {
             UserProfileRepository,
             FacturaManagerRepository,
-            QueueClientAdapter
+            QueueClientAdapter,
+            WorkTeamRepositoryAdapter
         } = adapters;
 
 
@@ -48,9 +52,26 @@ export class ApplicationModule {
         const FacturaManagerUseCaseProvider = {
             provide: FACTURA_MANAGER_USE_CASE,
             imports: [ConfigModule],
-            inject: [FacturaManagerRepository, ConfigService, QueueClientAdapter],
-            useFactory: (facturaManagerRepository: IFacturaManagerRepository, configService: ConfigService, messagePublisher: IMessagePublisher) => {
-                return new FacturaManagerUseCase(facturaManagerRepository, messagePublisher, configService);
+            inject: [
+                FacturaManagerRepository,
+                ConfigService,
+                QueueClientAdapter,
+                UserProfileRepository,
+                WorkTeamRepositoryAdapter
+            ],
+            useFactory: (
+                facturaManagerRepository: IFacturaManagerRepository,
+                configService: ConfigService,
+                messagePublisher: IMessagePublisher,
+                userProfileRepository: IUserProfileRepository,
+                workTeamRepository: IWorkTeamRepository
+            ) => {
+                return new FacturaManagerUseCase(
+                    facturaManagerRepository,
+                    userProfileRepository,
+                    workTeamRepository,
+                    messagePublisher,
+                    configService);
             }
         };
 

@@ -21,6 +21,7 @@ export enum EVENT_CODES{
     FACTURA_DUPLICADA = "FACTURA_DUPLICADA",
     FACTURA_PROCESADA = "FACTURA_PROCESADA",
     FACTURA_ERROR_PROCESAMIENTO = "FACTURA_ERROR_PROCESAMIENTO",
+    FACTURA_ERROR_VALIDACION = "FACTURA_ERROR_VALIDACION",
 }
 
 export enum EVENT_DESCRIPTIONS  {
@@ -29,4 +30,5 @@ export enum EVENT_DESCRIPTIONS  {
     FACTURA_DUPLICADA = "Factura duplicada, ya existe una factura con el mismo emisor y folio",
     FACTURA_PROCESADA = "Factura procesada exitosamente",
     FACTURA_ERROR_PROCESAMIENTO = "Error al procesar la factura",
+    FACTURA_ERROR_VALIDACION = "Error de validación de la factura, Usuario u organización no válidos",
 }

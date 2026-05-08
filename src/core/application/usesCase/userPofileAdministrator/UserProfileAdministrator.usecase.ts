@@ -12,10 +12,10 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
     private readonly logger = new Logger(UserProfileAdministratorUseCase.name);
     constructor(
         private userProfileRepository: IUserProfileRepository
-    ) {}
+    ) { }
 
 
-    async ExecuteGetUserProfile (query: GetProfileQuery): Promise<UserProfileModel> {
+    async ExecuteGetUserProfile(query: GetProfileQuery): Promise<UserProfileModel> {
         const userProfile = await this.userProfileRepository.getUserProfile(query.uuid);
         if (!userProfile) {
             this.logger.warn(`User profile not found for UUID: ${query.uuid}`);
@@ -57,9 +57,12 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
 
     async ExecuteGetUserOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
         const userOrganizacionProfile = await this.userProfileRepository.getOrganizacionByUsuario(uuid);
-        if (!userOrganizacionProfile) {
+        if (!userOrganizacionProfile || userOrganizacionProfile.length === 0) {
             this.logger.warn(`User organization profile not found for UUID: ${uuid}`);
             throw new Error("User organization profile not found");
+        }
+        if (userOrganizacionProfile.length > 1) {
+            userOrganizacionProfile.push(Object.assign(new UserOrganizacionProfileModel(), { organizacion_uuid: "Todas", razon_social: "Todas", cargo: "Todas", nombre_contacto: "Todas", orden: 0 }));
         }
         this.logger.log(`User organization profile retrieved for UUID: ${uuid}`);
         return userOrganizacionProfile;

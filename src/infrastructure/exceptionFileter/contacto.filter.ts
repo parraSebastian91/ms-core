@@ -8,6 +8,7 @@ import { UserExistError } from "src/core/share/errors/usuarioExistError.error";
 import { UserNotFoundError } from "src/core/share/errors/UserNotFound.error";
 import { UpdateError } from "src/core/share/errors/Update.error";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
+import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -75,6 +76,11 @@ export class CoreExceptionFilter implements ExceptionFilter {
             status = HttpStatus.NOT_FOUND;
             message = exception.message;
         }
+        else if (exception instanceof UserAndOrgError) {
+            Logger.error(`Error: ${exception.message}`, exception.stack);
+            status = HttpStatus.BAD_REQUEST;
+            message = exception.message;
+        }        
         else {
             console.error(`Exception caught: ${exception.message}`, exception.stack);
             Logger.error(`Unexpected error: ${exception.message}`, exception.stack);

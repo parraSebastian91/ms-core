@@ -165,4 +165,32 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         }
         return result;
     }
+
+    async validateUserAndOrganizacion(usuario: string, organizacion_uuid: string): Promise<boolean> {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
+        const query = ` select SELECT COUNT(*) > 0 AS is_valid
+                        from 
+                            core.usuario u left join core.contacto c
+                                on u.contacto_id = c.contacto_id
+                            join core.organizacion_contacto oc
+                                on oc.contacto_id = c.contacto_id
+                            join core.organizacion o
+                                on oc.organizacion_id = o.organizacion_id
+                        where 
+                        ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $1
+                        and o.organizacion_uuid = $2`;
+        const values = [usuario, organizacion_uuid];
+        try {
+            const result = await this.dataSource.query(query, values);
+            this.logger.debug(`Resultado de la verificación de usuario y organización: ${JSON.stringify(result)}`);
+            return result[0]?.is_valid ?? false;
+        } catch (error: any) {
+            this.logger.error(
+                `Error al verificar si el usuario pertenece a la organización: ${error?.message ?? error}`,
+                `usuario: ${usuario}, organización: ${organizacion_uuid}`,
+                error?.stack,
+            );
+            return false;
+        }
+    }
 }

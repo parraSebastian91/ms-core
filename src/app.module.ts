@@ -8,7 +8,8 @@ import { JwtModule } from '@nestjs/jwt';
 import configurations from 'config/configurations';
 import { UserProfileRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/userProfileRepository.adapter';
 import { QueueClientAdapter } from './infrastructure/adapter/outbound/queue/queue-client.adapter';
-import { FacturaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/facturaRepositorry.adapter';
+import { FacturaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/facturaRepository.adapter';
+import { WorkTeamRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/workTeamRepositori.adapter';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FacturaRepositoryAdapter } from './infrastructure/adapter/outbound/data
         UserProfileRepository: UserProfileRepositoryAdapter,
         FacturaManagerRepository: FacturaRepositoryAdapter,
         QueueClientAdapter: QueueClientAdapter,
+        WorkTeamRepositoryAdapter: WorkTeamRepositoryAdapter
       },
     }),
     JwtModule.register({
