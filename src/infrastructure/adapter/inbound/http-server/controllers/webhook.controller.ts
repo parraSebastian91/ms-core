@@ -7,7 +7,7 @@ import { Public } from '../decorators/public.decorator';
 import { Response } from 'express';
 import { NotifyModel } from '../model/dto/dteNotification.dto';
 import { IFacturaManager } from 'src/core/domain/puertos/inbound/IFacturaPublisher.interface';
-import { CONSTANTES } from 'src/core/domain/model/constantes.model';
+import { CATEGORY_PROCESS } from 'src/core/domain/model/constantes.model';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 
 @Controller("webhooks")
@@ -27,10 +27,10 @@ export class WebhookController {
         @Body() payload: NotifyModel,
         @Res() response: Response
     ) {
-        this.logger.log(`Webhook received with correrlationId: ${payload.correlationId}, category: ${payload.category}`);
+        this.logger.log(`Webhook received with correrlationId: ${payload.correlationId}, category: ${payload.category}, gestor: ${payload.gestor}   `);
 
         switch (payload.category) {
-            case CONSTANTES.CATEGORY_NOTIFICACION_DTE_FACTURA:
+            case CATEGORY_PROCESS.DTE_FACTURA:
                 const result = await this.facturaManager.ExecutePublishFactura(NotifyModel.toModel(payload));
                 if (result) {
                     this.logger.log(`Factura procesada exitosamente para correlación: ${payload.correlationId}`);

@@ -13,7 +13,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         private readonly dataSource: DataSource
     ) { }
 
-    async publishFactura(factura: FacturaModel): Promise<boolean | string> {
+    async publishFactura(factura: FacturaModel): Promise<string> {
 
         this.logger.log(`Publicando factura: ${JSON.stringify(factura)}`);
 
@@ -22,9 +22,9 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
         const query = `
         INSERT INTO ${schema}.factura 
-        (${factura.assetId != "" ? "asset_id, " : ""} organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status) 
-        ${factura.assetId != "" ? "VALUES ($1, $2, $3, $4, $5, $6, $7, $8)" : "VALUES ($1, $2, $3, $4, $5, $6, $7)"}
-        `;
+        (${factura.assetId != "" ? "asset_id, " : ""} organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id) 
+        ${factura.assetId != "" ? "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)" : "VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"}
+        RETURNING id`;
 
         let values: any[] = [];
         if (factura.assetId != "") {
@@ -37,7 +37,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.montoTotal,
                 factura.fechaVencimiento,
                 String(factura.status),
-                //factura.correlationId
+                factura.correlationId
             ];
         } else {
             values = [
@@ -48,21 +48,22 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.montoTotal,
                 factura.fechaVencimiento,
                 String(factura.status),
-                //factura.correlationId
+                factura.correlationId
             ];
         }
 
         try {
-            await this.dataSource.query(query, values);
-            this.logger.log(`Factura publicada exitosamente: ${factura.facturaNumero}`);
-            return true;
+            const result = await this.dataSource.query(query, values);
+            const facturaId = result[0].id; // ✅ ID generado
+            this.logger.log(`Factura creada con ID: ${facturaId}`);
+            return facturaId; // o true + guardar el ID en otro lado
         } catch (error: any) {
             this.logger.error(
                 `Error al publicar la factura: ${error?.message ?? error}`,
                 factura.correlationId,
                 error?.stack,
             );
-            return false;
+            return error?.message ?? error;
         }
     }
 }
