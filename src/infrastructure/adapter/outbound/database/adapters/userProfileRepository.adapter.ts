@@ -69,7 +69,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         f.descripcion               AS descripcion_funcion,
                         f.icono  				    AS func_icon,
                         p.per_cod                   AS codigo_permiso,
-                        p.per_nombre                AS nombre_permiso
+                        p.per_nombre                AS nombre_permiso,
                     FROM "${schema}".usuario u
                         JOIN "${schema}".contacto c
                             ON c.contacto_id = u.contacto_id
@@ -146,9 +146,23 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
     async getOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
         const query = ` select 
                             CONCAT(c.nombres, ' ',c.apellido_paterno, ' ', c.apellido_materno) as nombre_contacto,
+                            u.usuario_uuid,
+                            u.username,
                             oc.cargo,
                             o.razon_social,
-                            o.organizacion_uuid
+                            o.organizacion_uuid,
+                            o.tipo_participante,
+                            CASE
+                                WHEN o.tipo_participante = 'FINANCIADORA' 
+                                    AND r.codigo IN ('EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
+                                    THEN 'PORTAL_FINANCIADORA'
+                                WHEN o.tipo_participante = 'CEDENTE'
+                                    AND r.codigo IN ('CLIENTE_CEDENTE', 'ADMIN_CEDENTE')
+                                    THEN 'PORTAL_CEDENTE'
+                                WHEN r.codigo IN ('SUPER_ADMIN', 'ADMIN')
+                                    THEN 'PORTAL_ADMIN'
+                                ELSE 'SIN_ACCESO'
+                            END AS portal
                         from 
                             core.usuario u left join core.contacto c 
                                 on u.contacto_id = c.contacto_id 
@@ -156,7 +170,13 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                                 on oc.contacto_id = c.contacto_id
                             join core.organizacion o
                                 on oc.organizacion_id = o.organizacion_id
-                        where u.usuario_uuid = $1`;
+                            JOIN core.usuario_rol ur
+                                ON ur.usuario_id = u.usuario_id
+                            JOIN core.rol r
+                                ON r.rol_id = ur.rol_id
+                        where u.usuario_uuid = $1
+                          AND u.activo   = true
+                          AND o.activo   = true`;
         const values = [uuid];
         const result = await this.dataSource.query<UserOrganizacionProfileModel[]>(query, values);
         if (!result[0]) {
@@ -168,7 +188,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
     async validateUserAndOrganizacion(usuario: string, organizacion_uuid: string): Promise<boolean> {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
-        const query = ` select SELECT COUNT(*) > 0 AS is_valid
+        const query = ` SELECT COUNT(*) > 0 AS is_valid
                         from 
                             core.usuario u left join core.contacto c
                                 on u.contacto_id = c.contacto_id

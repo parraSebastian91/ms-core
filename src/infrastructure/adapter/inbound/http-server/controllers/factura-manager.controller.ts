@@ -2,11 +2,13 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, Inject, Logger, Param, Req, Res, UseFilters } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Inject, Logger, Param, Req, Res, UseFilters } from '@nestjs/common';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IFacturaManager } from 'src/core/domain/puertos/inbound/IFacturaPublisher.interface';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { Request, Response } from 'express';
+import { ApiResponse } from '../model/api-response.model';
+import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
 
 const permisosControlador =
 {
@@ -45,8 +47,8 @@ export class FacturaManagerController {
         const endDate = new Date();
         const duration = endDate.getTime() - initDAte.getTime();
         this.logger.log(`[END] getFacturas - Usuario: ${usuario}, Organización: ${orgUUID}, Duración: ${duration}ms`);
-        return response.status(200).json(facturas);
-        
+        this.logger.debug(`Facturas obtenidas para usuario ${usuario} y organización ${orgUUID}: ${JSON.stringify(facturas)}`);
+        return response.status(200).json(new ApiResponse(HttpStatus.OK, "Extracción exitosa", facturas));        
     }
 
 }

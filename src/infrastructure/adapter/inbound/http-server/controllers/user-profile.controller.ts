@@ -22,7 +22,6 @@ export class UserProfileController {
     ) { }
 
     @Get("profile/:uuid")
-    @Roles("SUPER_ADMIN")
     @Permissions("USR_VIEW")
     async getUserProfile(
         @Param("uuid") uuid: string,
@@ -33,7 +32,6 @@ export class UserProfileController {
     }
 
     @Get("profile/navigation/:uuid")
-    @Roles("SUPER_ADMIN")
     @Permissions("USR_VIEW")
     async getUserProfileNavigation(
         @Param("uuid") uuid: string,
@@ -44,7 +42,6 @@ export class UserProfileController {
     }
 
     @Get("profile/image/:uuid")
-    @Roles("SUPER_ADMIN")
     @Permissions("USR_VIEW")
     async getUserProfileImage(
         @Param("uuid") uuid: string,
@@ -55,7 +52,6 @@ export class UserProfileController {
     }
 
     @Put("profile/:uuid")
-    @Roles("SUPER_ADMIN")
     @Permissions("USR_VIEW")
     async updateUserProfileImage(
         @Body() body: any,
@@ -68,7 +64,6 @@ export class UserProfileController {
     }
 
     @Get("profile/organization/:uuid")
-    @Roles("SUPER_ADMIN")
     @Permissions("USR_VIEW")
     async getUserOrganizacionProfile(
         @Param("uuid") uuid: string,

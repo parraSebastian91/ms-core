@@ -51,8 +51,6 @@ class RedesSociales {
     }
 
     static fromJsonBject(datoContacto: UserProfileModel): RedesSociales[] {
-        console.log("Redes sociales JSON:", datoContacto.redes_sociales);
-        //const json = JSON.parse(datoContacto.redes_sociales);
         return Object.keys(datoContacto.redes_sociales).map(key => {
             return new RedesSociales(key, datoContacto.redes_sociales[key]);
         })

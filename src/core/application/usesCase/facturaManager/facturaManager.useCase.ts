@@ -161,7 +161,6 @@ export class FacturaManagerUseCase implements IFacturaManager {
     }
 
     async getFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]> {
-
         let isLeader = await this.workTeamRepository.isLeaderOfWorkTeam(usuario, orgUUID);
         this.logger.debug(`Usuario ${usuario} es líder del equipo de trabajo ${orgUUID}: ${isLeader}`);
         if (orgUUID !== "Todas") {
@@ -171,13 +170,6 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 throw new UserAndOrgError("Error de validación de usuario y organización");
             }
         }
-
-
-
-        const facturas = await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);
-
-        
-
-        return [];
+        return await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);;
     }
 }

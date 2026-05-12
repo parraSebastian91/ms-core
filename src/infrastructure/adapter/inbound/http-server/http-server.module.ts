@@ -11,6 +11,7 @@ import { UserProfileController } from './controllers/user-profile.controller';
 import { RolesGuard } from './guards/roles.guard';
 import { WebhookController } from './controllers/webhook.controller';
 import { HealthcheckController } from './controllers/healthcheck.controller';
+import { FacturaManagerController } from './controllers/factura-manager.controller';
 
 @Module({
     imports: [
@@ -22,7 +23,8 @@ import { HealthcheckController } from './controllers/healthcheck.controller';
     controllers: [
         UserProfileController,
         WebhookController,
-        HealthcheckController
+        HealthcheckController,
+        FacturaManagerController
     ],
     providers: [
         AuthGuard,

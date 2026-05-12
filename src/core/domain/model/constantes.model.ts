@@ -15,7 +15,7 @@ export enum facturaEstado {
     DENUNCIADA = "DENUNCIADA",
 }
 
-export enum EVENT_CODES{
+export enum EVENT_CODES {
     FACTURA_PUBLICADA = "FACTURA_PUBLICADA",
     FACTURA_VACIA_PUBLICADA = "FACTURA_VACIA_PUBLICADA",
     FACTURA_DUPLICADA = "FACTURA_DUPLICADA",
@@ -24,11 +24,24 @@ export enum EVENT_CODES{
     FACTURA_ERROR_VALIDACION = "FACTURA_ERROR_VALIDACION",
 }
 
-export enum EVENT_DESCRIPTIONS  {
+export enum EVENT_DESCRIPTIONS {
     FACTURA_PUBLICADA = "Factura publicada exitosamente",
     FACTURA_VACIA_PUBLICADA = "Factura vacía publicada exitosamente",
     FACTURA_DUPLICADA = "Factura duplicada, ya existe una factura con el mismo emisor y folio",
     FACTURA_PROCESADA = "Factura procesada exitosamente",
     FACTURA_ERROR_PROCESAMIENTO = "Error al procesar la factura",
     FACTURA_ERROR_VALIDACION = "Error de validación de la factura, Usuario u organización no válidos",
+}
+
+export enum ROLE_PERMISSION_CODES {
+    SUPER_ADMIN = "SUPER_ADMIN",
+    ADMIN = "ADMIN",
+    SUPERVISOR = "SUPERVISOR",
+    USR_STD = "USR_STD",
+    READ_ONLY = "READ_ONLY",
+    CLIENTE_CEDENTE = "CLIENTE_CEDENTE",
+    EJECUTIVO_FINANCIADORA = "EJECUTIVO_FINANCIADORA",
+    ADMIN_FINANCIADORA = "ADMIN_FINANCIADORA",
+    ADMIN_CEDENTE = "ADMIN_CEDENTE",
+
 }

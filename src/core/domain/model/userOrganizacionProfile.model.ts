@@ -5,4 +5,5 @@ export class UserOrganizacionProfileModel {
     cargo: string;
     razon_social: string;
     organizacion_uuid: string;
+    portal: string;
 }

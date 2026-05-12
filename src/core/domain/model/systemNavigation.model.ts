@@ -89,10 +89,6 @@ export class SystemNavigationModel {
             }
             model.sistemas = Array.from(sistemaMap.values());
         });
-
-
-        console.log("Constructed SystemNavigationModel:", model);
         return model;
-
     }
 }

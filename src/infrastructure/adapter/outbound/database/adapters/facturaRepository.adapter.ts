@@ -71,45 +71,67 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
     async getFacturas(usuario: string, orgUUID: string, isLeader: boolean): Promise<FacturaModel[]> {
         this.logger.debug(`Obteniendo facturas para usuario: ${usuario}, organización: ${orgUUID}`);
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
+        const params: any[] = [];
+        const todasLasOrgs = orgUUID === 'Todas';
 
-        const configuredSchema = "factura";
-        const schema = configuredSchema.replace(/"/g, '""');
+        // Base
+        let query = `
+        SELECT
+            fct.id              AS uuid,
+            fct.organizacion_id AS organizacion_uuid,
+            org.razon_social as nombre_mandante,
+            org.rut as rut_mandante,
+            fct.asset_id,
+            fct.gestor,
+            fct.deudor_nombre,
+            fct.deudor_rut,
+            fct.factura_numero,
+            fct.monto_total,
+            fct.fecha_vencimiento,
+            fct.status,
+            fct.correlation_id,
+            fct.created_at
+        FROM factura.factura fct left join core.organizacion org on fct.organizacion_id = org.organizacion_uuid  
+        WHERE 1=1
+    `;
 
-        const subquery = `
-        SELECT gt.organizacion_id
-        FROM core.usuario u
-        JOIN core.grupo_trabajo gt
-            ON gt.lider_usuario_uuid = u.usuario_uuid
-        WHERE u.username    = '${usuario}'
-          AND u.activo      = true
-          AND gt.activo     = true
+        // Filtro por org
+        if (!todasLasOrgs) {
+            params.push(orgUUID);
+            query += ` AND fct.organizacion_id = $${params.length}`;
+        }
+
+        // Filtro por rol
+        if (isLeader) {
+            params.push(usuario);
+            query += `
+            AND EXISTS (
+                SELECT 1
+                FROM core.usuario u
+                JOIN core.grupo_trabajo gt
+                    ON gt.lider_usuario_uuid = u.usuario_uuid
+                WHERE 
+                    ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $${params.length}
+                    AND u.activo           = true
+                    AND gt.activo          = true
+                    AND gt.organizacion_id = fct.organizacion_id
+            )
         `;
+        } else {
+            params.push(usuario);
+            query += ` AND fct.gestor = $${params.length}`;
+        }
 
-        const query = `
-                select 
-                    fct.id as uuid,
-                    fct.organizacion_id as organizacion_uuid,
-                    fct.asset_id,
-                    fct.gestor,
-                    fct.deudor_nombre,
-                    fct.deudor_rut,
-                    fct.factura_numero,
-                    fct.monto_total,
-                    fct.fecha_vencimiento,
-                    fct.status,
-                    fct.correlation_id,
-                    fct.created_at
-                from 
-                    ${schema}.factura fct
-                where 
-                    (${isLeader ? 'fct.organizacion_id IN '+ subquery : `fct.gestor = '${usuario}'`}) and
-                    (${orgUUID === '"Todas"' ? '1=1' : `fct.organizacion_id = '${orgUUID}'`})
-                order by fct.created_at desc`;
+        query += ` ORDER BY fct.created_at DESC`;
 
         try {
-            const result = await this.dataSource.query(query);
+            const result = await this.dataSource.query(query, params);
             this.logger.debug(`Facturas obtenidas: ${JSON.stringify(result)}`);
+
+
             // Aquí deberías mapear el resultado a FacturaModel[]
+            return result.map((row: any) => FacturaModel.fromEntity(row)) || [];
         } catch (error: any) {
             this.logger.error(
                 `Error al obtener las facturas: ${error?.message ?? error}`,
