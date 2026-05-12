@@ -91,9 +91,21 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             fct.fecha_vencimiento,
             fct.status,
             fct.correlation_id,
-            fct.created_at
-        FROM factura.factura fct left join core.organizacion org on fct.organizacion_id = org.organizacion_uuid  
-        WHERE 1=1
+            fct.created_at,
+            CASE
+                when fct.status = 'PENDIENTE_VALIDACION' 
+                    THEN mv.url_path       
+                ELSE 'N/A'
+            END AS storage_key     
+            FROM factura.factura fct 
+                join core.organizacion org
+                    on fct.organizacion_id = org.organizacion_uuid  
+                join media.media_assets ma 
+                    on ma.owner_id = org.organizacion_uuid 
+                    and ma.category = 'DTE-factura'
+                join media.media_variants mv
+                    on mv.asset_id = ma.id 
+            WHERE 1=1
     `;
 
         // Filtro por org

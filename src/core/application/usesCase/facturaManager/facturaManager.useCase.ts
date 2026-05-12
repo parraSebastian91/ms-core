@@ -170,6 +170,6 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 throw new UserAndOrgError("Error de validación de usuario y organización");
             }
         }
-        return await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);;
+        return await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);
     }
 }

@@ -32,7 +32,7 @@ export class UserProfileController {
     }
 
     @Get("profile/navigation/:uuid")
-    @Permissions("USR_VIEW")
+    @Permissions("MENU_VIEW")
     async getUserProfileNavigation(
         @Param("uuid") uuid: string,
         @Res() res: Response
@@ -64,7 +64,7 @@ export class UserProfileController {
     }
 
     @Get("profile/organization/:uuid")
-    @Permissions("USR_VIEW")
+    @Permissions("ORG_VIEW")
     async getUserOrganizacionProfile(
         @Param("uuid") uuid: string,
         @Res() res: Response
@@ -72,8 +72,6 @@ export class UserProfileController {
         const userOrganizacionProfile = await this.userProfileUseCase.ExecuteGetUserOrganizacionByUsuario(uuid);
         return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", UserOrganizacionProfileDTO.fromModelArray(userOrganizacionProfile)));
     }
-
-
 
 
 }

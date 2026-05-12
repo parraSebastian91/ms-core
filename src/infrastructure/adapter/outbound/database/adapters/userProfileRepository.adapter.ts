@@ -69,7 +69,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         f.descripcion               AS descripcion_funcion,
                         f.icono  				    AS func_icon,
                         p.per_cod                   AS codigo_permiso,
-                        p.per_nombre                AS nombre_permiso,
+                        p.per_nombre                AS nombre_permiso
                     FROM "${schema}".usuario u
                         JOIN "${schema}".contacto c
                             ON c.contacto_id = u.contacto_id
@@ -148,7 +148,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                             CONCAT(c.nombres, ' ',c.apellido_paterno, ' ', c.apellido_materno) as nombre_contacto,
                             u.usuario_uuid,
                             u.username,
-                            oc.cargo,
+                            gm.cargo_en_grupo as cargo,
                             o.razon_social,
                             o.organizacion_uuid,
                             o.tipo_participante,
@@ -166,17 +166,20 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         from 
                             core.usuario u left join core.contacto c 
                                 on u.contacto_id = c.contacto_id 
-                            join core.organizacion_contacto oc
-                                on oc.contacto_id = c.contacto_id
+                            join core.grupo_miembro gm
+                                on gm.usuario_uuid = u.usuario_uuid and gm.active = true
+                            join core.grupo_trabajo gt
+                                on gm.grupo_id = gt.grupo_id and gt.activo = true
                             join core.organizacion o
-                                on oc.organizacion_id = o.organizacion_id
-                            JOIN core.usuario_rol ur
-                                ON ur.usuario_id = u.usuario_id
-                            JOIN core.rol r
-                                ON r.rol_id = ur.rol_id
+                                on gt.organizacion_id = o.organizacion_uuid and o.activo = true
+                            join core.usuario_rol ur
+                                on ur.usuario_id = u.usuario_id
+                            join core.rol r
+                                on r.rol_id = ur.rol_id
                         where u.usuario_uuid = $1
-                          AND u.activo   = true
-                          AND o.activo   = true`;
+                            and r.codigo IN ('CLIENTE_CEDENTE', 'ADMIN_CEDENTE','EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
+                            AND u.activo   = true
+                            AND o.activo   = true`;
         const values = [uuid];
         const result = await this.dataSource.query<UserOrganizacionProfileModel[]>(query, values);
         if (!result[0]) {
@@ -190,12 +193,12 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
         const query = ` SELECT COUNT(*) > 0 AS is_valid
                         from 
-                            core.usuario u left join core.contacto c
-                                on u.contacto_id = c.contacto_id
-                            join core.organizacion_contacto oc
-                                on oc.contacto_id = c.contacto_id
+                            core.usuario u join core.grupo_miembro gm
+                                on gm.usuario_uuid = u.usuario_uuid and gm.active = true
+                            join core.grupo_trabajo gt
+                                on gm.grupo_id = gt.grupo_id and gt.activo = true
                             join core.organizacion o
-                                on oc.organizacion_id = o.organizacion_id
+                                on gt.organizacion_id = o.organizacion_uuid and o.activo = true
                         where 
                         ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $1
                         and o.organizacion_uuid = $2`;
