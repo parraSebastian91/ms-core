@@ -1,8 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { length } from "class-validator";
 import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
+import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManager } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
 import { IMessagePublisher } from "src/core/domain/puertos/inbound/message.publisher.interface";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
@@ -25,7 +25,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
     async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
         this.logger.log(`Ejecutando publicación de factura, correlación: ${factura.correlationId}}`);
-
+        // com oes factura el OWNER es la organizacion, se valida que el usuario gestor pertenezca a la organización indicada en ownerUUID
         const validateUserAndOrganizacion = await this.userProfileRepository.validateUserAndOrganizacion(factura.gestor, factura.ownerUUID);
         //subo la factura al repositorio de bse de datos
         const resultQuery = await this.facturaRepository.publishFactura(factura);
@@ -78,8 +78,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
             if (result) {
                 this.logger.log(`Factura vacia publicada parar Notificaciones exitosamente para correlación: ${factura.correlationId}`);
                 const facturaDTO: FacturaDTO = {
-                    assetId: Emptyfactura.assetId,
                     facturaUUID: result,
+                    assetId: Emptyfactura.assetId,
                     deudorNombre: Emptyfactura.deudorNombre,
                     deudorRut: Emptyfactura.deudorRut,
                     facturaNumero: Emptyfactura.facturaNumero,
@@ -160,9 +160,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
         return true;
     }
 
-    async getFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]> {
+    async ExecuteGetFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]> {
         let isLeader = await this.workTeamRepository.isLeaderOfWorkTeam(usuario, orgUUID);
-        this.logger.debug(`Usuario ${usuario} es líder del equipo de trabajo ${orgUUID}: ${isLeader}`);
         if (orgUUID !== "Todas") {
             const validateUserAndOrganizacion = await this.userProfileRepository.validateUserAndOrganizacion(usuario, orgUUID);
             if (!validateUserAndOrganizacion) {
@@ -171,5 +170,20 @@ export class FacturaManagerUseCase implements IFacturaManager {
             }
         }
         return await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);
+    }
+
+    async ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{ campo: string, id: string, valor: any, isUpdate: any, mensaje: string }> {
+        const validateUserAndOrganizacion = await this.userProfileRepository.validateUserAndOrganizacion(factura.gestor, factura.ownerUUID);
+        if (!validateUserAndOrganizacion) {
+            this.logger.error(`Error de validación de usuario y organización para actualización de factura, usuario: ${factura.gestor}, organización: ${factura.ownerUUID}`);
+            throw new UserAndOrgError("Error de validación de usuario y organización");
+        }
+        const facturaEsEditable = await this.facturaRepository.validateFacturaEditable(factura.id);
+        if (!facturaEsEditable) {
+            this.logger.error(`La factura no es editable, facturaID: ${factura.id}`);
+            throw new Error("La factura no es editable");
+        }
+        const { id, valor, isUpdate, mensaje } = await this.facturaRepository.updateFactura(factura);
+        return { campo: factura.campoEditado.nombre, id, valor, isUpdate, mensaje };
     }
 }

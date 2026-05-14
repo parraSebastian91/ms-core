@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { FacturaModel } from "src/core/domain/model/factura.model";
+import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { DataSource } from "typeorm";
 
@@ -80,8 +81,8 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         SELECT
             fct.id              AS uuid,
             fct.organizacion_id AS organizacion_uuid,
-            org.razon_social as nombre_mandante,
-            org.rut as rut_mandante,
+            org.razon_social    AS nombre_mandante,
+            org.rut             AS rut_mandante,
             fct.asset_id,
             fct.gestor,
             fct.deudor_nombre,
@@ -92,20 +93,23 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             fct.status,
             fct.correlation_id,
             fct.created_at,
+            COUNT(ofer.factura_id)  AS ofertas,
             CASE
-                when fct.status = 'PENDIENTE_VALIDACION' 
-                    THEN mv.url_path       
+                WHEN fct.status = 'PENDIENTE_VALIDACION'
+                    THEN mv.url_path
                 ELSE 'N/A'
-            END AS storage_key     
-            FROM factura.factura fct 
-                join core.organizacion org
-                    on fct.organizacion_id = org.organizacion_uuid  
-                join media.media_assets ma 
-                    on ma.owner_id = org.organizacion_uuid 
-                    and ma.category = 'DTE-factura'
-                join media.media_variants mv
-                    on mv.asset_id = ma.id 
-            WHERE 1=1
+            END AS storage_key
+        FROM factura.factura fct
+        JOIN core.organizacion org
+            ON org.organizacion_uuid = fct.organizacion_id
+        JOIN media.media_assets ma
+            ON ma.owner_id  = org.organizacion_uuid
+            AND ma.category = 'DTE-factura'
+        JOIN media.media_variants mv
+            ON mv.asset_id  = ma.id
+        LEFT JOIN factura.ofertas ofer       -- LEFT para incluir facturas sin ofertas
+            ON ofer.factura_id = fct.id
+        WHERE 1=1
     `;
 
         // Filtro por org
@@ -135,7 +139,25 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             query += ` AND fct.gestor = $${params.length}`;
         }
 
-        query += ` ORDER BY fct.created_at DESC`;
+        query += `
+        GROUP BY
+            fct.id,
+            fct.organizacion_id,
+            org.razon_social,
+            org.rut,
+            fct.asset_id,
+            fct.gestor,
+            fct.deudor_nombre,
+            fct.deudor_rut,
+            fct.factura_numero,
+            fct.monto_total,
+            fct.fecha_vencimiento,
+            fct.status,
+            fct.correlation_id,
+            fct.created_at,
+            mv.url_path
+        ORDER BY fct.created_at DESC;
+        `;
 
         try {
             const result = await this.dataSource.query(query, params);
@@ -152,5 +174,59 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             );
         }
         return [];
+    }
+
+    async getFacturaByID(facturaID: string): Promise<FacturaModel | null> {
+        return null; // Implementa esta función si es necesario para tu caso de uso
+    }
+
+    async validateFacturaEditable(facturaID: string): Promise<boolean> {
+        const query = `
+        select count(*) > 0 is_editable
+        from factura.factura fct
+        where 
+        fct.id = $1
+        and fct.status in ('PENDIENTE_VALIDACION')
+        `;
+
+        try {
+            const result = await this.dataSource.query(query, [facturaID]);
+            console.log("Resultado de validación de factura editable:", result);
+            return result[0]?.is_editable || false;
+        } catch (error: any) {
+            this.logger.error(
+                `Error al validar si la factura es editable: ${error?.message ?? error}`,
+                `facturaID: ${facturaID}`,
+                error?.stack,
+            );
+            return false;
+        }
+    }
+
+    async updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null> {
+        const query = `
+        UPDATE 
+            factura.factura 
+        SET 
+            ${factura.campoEditado.nombreColumna}=${factura.campoEditado.valor}
+        WHERE id=$1 and status='PENDIENTE_VALIDACION' and gestor=$2 and organizacion_id=$3
+        RETURNING id
+        `;
+        try {
+            const result = await this.dataSource.query(query, [ factura.id, factura.gestor, factura.ownerUUID]);
+            if (result.length > 0) {
+                return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: true, mensaje: "Factura actualizada exitosamente" };
+            } else {
+                this.logger.warn(`No se pudo actualizar la factura, verifica que el ID sea correcto y que la factura esté en estado PENDIENTE_VALIDACION, facturaID: ${factura.id}`);
+                return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: false, mensaje: "No se pudo actualizar la factura, verifica que el ID sea correcto y que la factura esté en estado PENDIENTE_VALIDACION" };
+            }
+        } catch (error: any) {
+            this.logger.error(
+                `Error al actualizar la factura: ${error?.message ?? error}`,
+                `facturaID: ${factura.id}`,
+                error?.stack,
+            );
+            return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: null, mensaje: "Error al actualizar la factura" };
+        }
     }
 }

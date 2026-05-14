@@ -3,8 +3,7 @@ https://docs.nestjs.com/controllers#controllers
 */
 
 import { Body, Controller, Get, HttpStatus, Inject, Param, Put, Query, Res, UseFilters } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { Roles } from '../decorators/roles.decorator';
+import { Response } from 'express';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IUserProfileAdministratorUseCase } from 'src/core/domain/puertos/inbound/IUserAdministrator.interface';
 import { ApiResponse } from '../model/api-response.model';

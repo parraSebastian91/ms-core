@@ -9,6 +9,7 @@ import { UserNotFoundError } from "src/core/share/errors/UserNotFound.error";
 import { UpdateError } from "src/core/share/errors/Update.error";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
+import { DomainException } from "src/core/share/errors/DomainException";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -77,10 +78,15 @@ export class CoreExceptionFilter implements ExceptionFilter {
             message = exception.message;
         }
         else if (exception instanceof UserAndOrgError) {
-            Logger.error(`Error: ${exception.message}`, exception.stack);
+            Logger.error(`UserAndOrgError: ${exception.message}`, exception.stack);
             status = HttpStatus.BAD_REQUEST;
             message = exception.message;
-        }        
+        }     
+        else if (exception instanceof DomainException) {
+            Logger.error(`DomainException: ${exception.message}`, exception.stack);
+            status = HttpStatus.BAD_REQUEST;
+            message = exception.message;
+        }   
         else {
             console.error(`Exception caught: ${exception.message}`, exception.stack);
             Logger.error(`Unexpected error: ${exception.message}`, exception.stack);

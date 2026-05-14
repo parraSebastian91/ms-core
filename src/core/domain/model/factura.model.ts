@@ -1,6 +1,7 @@
 import { facturaEstado } from "./constantes.model";
 
 export class FacturaModel {
+    publiInvoiceId: string;
     assetId: string;
     ownerUUID: string;
     gestor: string;
@@ -14,7 +15,7 @@ export class FacturaModel {
     status: facturaEstado;
     correlationId: string;
     storage_key: string;
-
+    ofertas: number;
     constructor(ownerUUID: string, gestor: string, status: facturaEstado, correlationId: string) {
         this.assetId = "";
         this.ownerUUID = ownerUUID;
@@ -29,15 +30,17 @@ export class FacturaModel {
         this.status = status;
         this.correlationId = correlationId;
         this.storage_key = "";
+        this.ofertas = 0;
     }
 
     static fromEntity(entity: any): FacturaModel {
         const factura = new FacturaModel(
-            entity.organizacion_id,
+            entity.organizacion_uuid,
             entity.gestor,
             entity.status,
             entity.correlation_id
         );
+        factura.publiInvoiceId = entity.uuid;
         factura.assetId = entity.asset_id;
         factura.deudorNombre = entity.deudor_nombre;
         factura.rut_mandante = entity.rut_mandante;
@@ -47,6 +50,7 @@ export class FacturaModel {
         factura.montoTotal = entity.monto_total;
         factura.fechaVencimiento = new Date(entity.fecha_vencimiento);
         factura.storage_key = entity.storage_key;
+        factura.ofertas = entity.ofertas || 0;
         return factura;
     }
 

@@ -2,13 +2,14 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, HttpStatus, Inject, Logger, Param, Req, Res, UseFilters } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Inject, Logger, Param, Patch, Req, Res, UseFilters } from '@nestjs/common';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IFacturaManager } from 'src/core/domain/puertos/inbound/IFacturaPublisher.interface';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { Request, Response } from 'express';
 import { ApiResponse } from '../model/api-response.model';
 import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
+import { CampoEditado, FacturaUpdateModel } from 'src/core/domain/model/facturaUpdate.model';
 
 const permisosControlador =
 {
@@ -36,19 +37,44 @@ export class FacturaManagerController {
     async getFacturas(
         @Param("usuario") usuario: string,
         @Param("orgUUID") orgUUID: string,
-        @Req() request: Request,
         @Res() response: Response
     ) {
         const initDAte = new Date();
         this.logger.log(`[START] getFacturas - Usuario: ${usuario}, Organización: ${orgUUID}`);
 
-        const facturas = await this.facturaManager.getFacturas(usuario, orgUUID);
+        const facturas = await this.facturaManager.ExecuteGetFacturas(usuario, orgUUID);
 
         const endDate = new Date();
         const duration = endDate.getTime() - initDAte.getTime();
         this.logger.log(`[END] getFacturas - Usuario: ${usuario}, Organización: ${orgUUID}, Duración: ${duration}ms`);
         this.logger.debug(`Facturas obtenidas para usuario ${usuario} y organización ${orgUUID}: ${JSON.stringify(facturas)}`);
-        return response.status(200).json(new ApiResponse(HttpStatus.OK, "Extracción exitosa", facturas));        
+        return response.status(200).json(new ApiResponse(HttpStatus.OK, "Extracción exitosa", facturas));
+    }
+
+    @Patch()
+    @Permissions(permisosControlador.EDITAR_FACTURA)
+    async updateFactura(
+        @Req() request: Request,
+        @Res() response: Response
+    ) {
+        const startedAt = Date.now();
+        this.logger.debug(`[START] updateFactura - Usuario: ${request.body.gestor}, Organización: ${request.body.ownerUUID}, FacturaID: ${request.body.id}`);
+        const facturaUpdate = new FacturaUpdateModel(
+            request.body.id,
+            request.body.ownerUUID,
+            request.body.gestor,
+            new CampoEditado(request.body.campoEditado.nombre, request.body.campoEditado.valor)
+        ); // Asegúrate de que el cuerpo de la solicitud contenga los datos necesarios para actualizar la factura
+
+        const { campo, valor, id, isUpdate, mensaje } = await this.facturaManager.ExecuteUpdateFactura(facturaUpdate);
+
+        if (!isUpdate) {
+            this.logger.warn(`No se pudo actualizar la factura, verifica que el ID sea correcto y que la factura esté en estado PENDIENTE_VALIDACION, facturaID: ${request.body.id}`);
+            return response.status(400).json(new ApiResponse(HttpStatus.BAD_REQUEST, mensaje, { campo, id, valor, isUpdate }));
+        }
+        const endedAt = Date.now();
+        this.logger.debug(`[END] updateFactura - Usuario: ${request.body.gestor}, Organización: ${request.body.ownerUUID}, FacturaID: ${request.body.id}, Duración: ${endedAt - startedAt}ms`);
+        return response.status(200).json(new ApiResponse(HttpStatus.OK, mensaje, { campo, id, valor, isUpdate })); // Devuelve el campo actualizado y el nuevo valor
     }
 
 }
