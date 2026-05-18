@@ -2,7 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export interface CurrentUserData {
   userId: string;
-  username: string;
+  userName: string;
   roles: string[];
   permissions: string[];
   token?: string; // Token original (opcional)

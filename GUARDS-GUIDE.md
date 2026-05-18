@@ -53,7 +53,7 @@ Los guards se aplican de forma global para asegurar todas las rutas del API, con
 - Uso: 
   - `@CurrentUser() user: CurrentUserData` - Obtiene toda la información del usuario
   - `@CurrentUser('userId') userId: string` - Obtiene solo el ID del usuario
-  - `@CurrentUser('username') username: string` - Obtiene solo el nombre de usuario
+  - `@CurrentUser('userName') userName: string` - Obtiene solo el nombre de usuario
   - `@CurrentUser('roles') roles: string[]` - Obtiene solo los roles del usuario
   - `@CurrentUser('permissions') permissions: string[]` - Obtiene solo los permisos del usuario
 
@@ -178,7 +178,7 @@ export class UsuarioController {
   
   @Get('/me')
   async getCurrentUser(@CurrentUser() user: CurrentUserData) {
-    // user contiene { userId, username, roles, permissions }
+    // user contiene { userId, userName, roles, permissions }
     console.log('Permisos del usuario:', user.permissions);
     return await this.service.findById(user.userId);
   }
@@ -226,7 +226,7 @@ Una vez autenticado, la información del usuario está disponible en `request['u
 ```typescript
 {
   userId: string,
-  username: string,
+  userName: string,
   roles: string[],
   permissions: string[]
 }
@@ -289,7 +289,7 @@ Para probar las rutas protegidas:
    ```bash
    POST /auth/login
    {
-     "username": "usuario",
+     "userName": "usuario",
      "password": "contraseña"
    }
    ```

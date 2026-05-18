@@ -46,7 +46,7 @@ export class WorkTeamRepositoryAdapter implements IWorkTeamRepository {
         FROM 
         ${schema}.usuario u
         JOIN ${schema}.grupo_trabajo gt on u.usuario_uuid = gt.lider_usuario_uuid 
-        where ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $1  and gt.organizacion_id = $2 and gt.activo = true 
+        where ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $1  and gt.organizacion_id = $2 and gt.activo = true 
         `;
 
         const values: any[] = [usuario, workTeamId];

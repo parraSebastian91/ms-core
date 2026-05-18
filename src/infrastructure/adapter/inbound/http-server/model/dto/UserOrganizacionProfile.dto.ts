@@ -7,7 +7,7 @@ export class UserOrganizacionProfileDTO {
     organizacion_uuid: string;
     orden: number;
     usuario_uuid: string;
-    username: string;
+    userName: string;
     tipo_participante: string;
     static fromModelArray(models: UserOrganizacionProfileModel[]): UserOrganizacionProfileDTO[] {
         return models.map(model => {
@@ -18,7 +18,7 @@ export class UserOrganizacionProfileDTO {
             dto.organizacion_uuid = model.organizacion_uuid;
             dto.orden = model.orden || 1; // Asignar un valor predeterminado si orden es undefined o null
             dto.usuario_uuid = model.usuario_uuid;
-            dto.username = model.username;
+            dto.userName = model.userName;
             dto.tipo_participante = model.tipo_participante;
             return dto;
         }).sort((a, b) => a.orden - b.orden);

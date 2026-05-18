@@ -2,7 +2,7 @@
 
 export interface AccessTokenPayload {
     userId: number;
-    username: string;
+    userName: string;
     userUuid: string;
     sessionUuid: string;
     sessionId: string;

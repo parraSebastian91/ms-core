@@ -23,7 +23,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const schema = configuredSchema.replace(/"/g, '""');
 
         const query = `select 
-                        u.username,
+                        u.userName as username,
                         u.created_at as "ingreso",
                         u.activo,
                         c.nombres,
@@ -48,7 +48,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
         if (!result?.length) return null;
 
-        return Object.assign(new UserProfileModel(), result[0]);
+        return UserProfileModel.fromData(result[0]);
     }
 
     async GetSistema(uuid: string): Promise<any> {
@@ -147,7 +147,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const query = ` select 
                             CONCAT(c.nombres, ' ',c.apellido_paterno, ' ', c.apellido_materno) as nombre_contacto,
                             u.usuario_uuid,
-                            u.username,
+                            u.userName,
                             gm.cargo_en_grupo as cargo,
                             o.razon_social,
                             o.organizacion_uuid,
@@ -189,9 +189,12 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         return result;
     }
 
-    async validateUserAndOrganizacion(usuario: string, organizacion_uuid: string): Promise<boolean> {
+    async getUserProfileByUsername(usuario: string, organizacion_uuid: string): Promise<{ profile: { userName: string, usuario_uuid: string, organizacion_uuid: string } | null, isValid: boolean }> {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
-        const query = ` SELECT COUNT(*) > 0 AS is_valid
+        const query = ` SELECT
+                            u.userName,
+                            u.usuario_uuid,
+                            o.organizacion_uuid
                         from 
                             core.usuario u join core.grupo_miembro gm
                                 on gm.usuario_uuid = u.usuario_uuid and gm.active = true
@@ -200,20 +203,29 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                             join core.organizacion o
                                 on gt.organizacion_id = o.organizacion_uuid and o.activo = true
                         where 
-                        ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $1
+                        ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $1
                         and o.organizacion_uuid = $2`;
         const values = [usuario, organizacion_uuid];
         try {
             const result = await this.dataSource.query(query, values);
             this.logger.debug(`Resultado de la verificación de usuario y organización: ${JSON.stringify(result)}`);
-            return result[0]?.is_valid ?? false;
+            return { profile: result[0], isValid: !!result[0] };
         } catch (error: any) {
             this.logger.error(
                 `Error al verificar si el usuario pertenece a la organización: ${error?.message ?? error}`,
                 `usuario: ${usuario}, organización: ${organizacion_uuid}`,
                 error?.stack,
             );
+            return { profile: null, isValid: false };
+        }
+    }
+
+    async validateUserAndOrganizacion(usuario: string, organizacion_uuid: string): Promise<boolean> {
+        const isValid = await this.getUserProfileByUsername(usuario, organizacion_uuid);
+        if (!isValid.isValid) {
             return false;
         }
+
+        return isValid.isValid;
     }
 }

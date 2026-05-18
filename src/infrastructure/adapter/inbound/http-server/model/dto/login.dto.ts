@@ -2,7 +2,7 @@ import { IsNotEmpty } from "class-validator";
 
 export class LoginDto {
     @IsNotEmpty({ message: "El nombre de usuario es obligatorio" })
-    username: string;
+    userName: string;
     @IsNotEmpty({ message: "La contraseña es obligatoria" })
     password: string;
     @IsNotEmpty({ message: "El tipo de dispositivo es obligatorio" })

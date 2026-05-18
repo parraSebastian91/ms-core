@@ -9,7 +9,7 @@ export interface IWorkTeamRepository {
     getWorkTeamsByUserUuid(userUuid: string): Promise<WorkTeamModel[]>
     /**
      * 
-     * @param usuario puede ser tanto uuid com username
+     * @param usuario puede ser tanto uuid com userName
      * @param workTeamId 
      */
     isLeaderOfWorkTeam(usuario: string, workTeamId: string): Promise<boolean>;

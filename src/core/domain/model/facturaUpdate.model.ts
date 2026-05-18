@@ -75,6 +75,7 @@ export class CampoEditado {
                 if (Number(valor) <= 0) {
                     throw new DomainException("El valor no puede ser negativo o cero");
                 }
+                this.valor = valor;
                 break;
             case CampoFactura.NUMERO_FACTURA:
                 if (isNaN(Number(valor))) {
@@ -83,28 +84,60 @@ export class CampoEditado {
                 if (Number(valor) <= 0) {
                     throw new DomainException("El valor no puede ser negativo o cero");
                 }
+                this.valor = valor;
                 break;
             case CampoFactura.FECHA_VENCIMIENTO:
-                if (isNaN(Date.parse(valor))) {
+                const fechaVencimiento = this.parseFecha(valor);
+                if (!fechaVencimiento) {
                     throw new DomainException("El valor debe ser una fecha válida");
                 }
-                if (new Date(valor) < new Date()) {
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                fechaVencimiento.setHours(0, 0, 0, 0);
+                if (fechaVencimiento < hoy) {
                     throw new DomainException("La fecha de vencimiento no puede ser en el pasado");
                 }
+                this.valor = fechaVencimiento.toISOString();
                 break;
             case CampoFactura.RUT_DEUDOR:
                 const rutRegex = /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/;
                 if (!rutRegex.test(valor)) {
                     throw new DomainException("El valor debe ser un RUT válido (formato: XX.XXX.XXX-X)");
                 }
+                this.valor = valor;
                 break;
             case CampoFactura.NOMBRE_RAZON_SOCIAL_DEUDOR:
                 if (valor.length <= 3 || valor.length > 100) {
                     throw new DomainException("El valor debe tener entre 4 y 100 caracteres");
                 }
+                this.valor = valor;
                 break;
         }
-        this.valor = valor;
+
+    }
+
+    private parseFecha(valor: string): Date | null {
+        const valorLimpio = valor.trim();
+        const formatoLatino = /^(\d{2})-(\d{2})-(\d{4})$/;
+        const match = valorLimpio.match(formatoLatino);
+
+        if (match) {
+            const [, dia, mes, anio] = match;
+            const d = Number(dia);
+            const m = Number(mes);
+            const y = Number(anio);
+            const fecha = new Date(y, m - 1, d);
+
+            const esFechaValida =
+                fecha.getFullYear() === y &&
+                fecha.getMonth() === m - 1 &&
+                fecha.getDate() === d;
+
+            return esFechaValida ? fecha : null;
+        }
+
+        const fecha = new Date(valorLimpio);
+        return isNaN(fecha.getTime()) ? null : fecha;
     }
 
     private mapearNombreColumna(nombre: string): string {

@@ -1,5 +1,5 @@
 interface SistemaDTO {
-    username: string;
+    userName: string;
     nombre: string;
     razon_social: string;
     sistemas: {
@@ -23,7 +23,7 @@ interface SistemaDTO {
 }
 
 interface FromEntitySistemaDTO {
-    username: string;
+    userName: string;
     nombre:string;
     razon_social: string;
     sistemaid: number;

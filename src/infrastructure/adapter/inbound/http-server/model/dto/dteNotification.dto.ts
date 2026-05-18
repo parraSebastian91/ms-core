@@ -51,7 +51,7 @@ export class NotifyModel {
     payload: NotifyPayload;
 
     static toModel(data: NotifyModel): FacturaModel {
-        const factura = new FacturaModel(data.ownerUUID, data.gestor, facturaEstado.PENDIENTE_VALIDACION, data.correlationId);
+        const factura = new FacturaModel(data.ownerUUID, { username: data.gestor, uuid: data.gestor }, facturaEstado.PENDIENTE_VALIDACION, data.correlationId);
         factura.facturaNumero = data.payload.numeroFactura.join(";");
         factura.deudorRut = data.payload.rutDeudor.join(";");
         factura.deudorNombre = data.payload.nombreDeudor.join(";");

@@ -2,7 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, HttpStatus, Inject, Logger, Param, Patch, Req, Res, UseFilters } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Inject, Logger, Param, Patch, Post, Req, Res, UseFilters } from '@nestjs/common';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IFacturaManager } from 'src/core/domain/puertos/inbound/IFacturaPublisher.interface';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { ApiResponse } from '../model/api-response.model';
 import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
 import { CampoEditado, FacturaUpdateModel } from 'src/core/domain/model/facturaUpdate.model';
+import { FacturaCreateRequestDto } from '../model/dto/facturaCreate.request.dto';
 
 const permisosControlador =
 {
@@ -40,14 +41,13 @@ export class FacturaManagerController {
         @Res() response: Response
     ) {
         const initDAte = new Date();
-        this.logger.log(`[START] getFacturas - Usuario: ${usuario}, Organización: ${orgUUID}`);
+        this.logger.log(`[START] getFacturas `);
 
         const facturas = await this.facturaManager.ExecuteGetFacturas(usuario, orgUUID);
-
+        console.log( facturas); // Agrega este log para verificar las facturas obtenidas
         const endDate = new Date();
         const duration = endDate.getTime() - initDAte.getTime();
-        this.logger.log(`[END] getFacturas - Usuario: ${usuario}, Organización: ${orgUUID}, Duración: ${duration}ms`);
-        this.logger.debug(`Facturas obtenidas para usuario ${usuario} y organización ${orgUUID}: ${JSON.stringify(facturas)}`);
+        this.logger.log(`[END] getFacturas - Duración: ${duration}ms`);
         return response.status(200).json(new ApiResponse(HttpStatus.OK, "Extracción exitosa", facturas));
     }
 
@@ -75,6 +75,24 @@ export class FacturaManagerController {
         const endedAt = Date.now();
         this.logger.debug(`[END] updateFactura - Usuario: ${request.body.gestor}, Organización: ${request.body.ownerUUID}, FacturaID: ${request.body.id}, Duración: ${endedAt - startedAt}ms`);
         return response.status(200).json(new ApiResponse(HttpStatus.OK, mensaje, { campo, id, valor, isUpdate })); // Devuelve el campo actualizado y el nuevo valor
+    }
+
+    @Post()
+    @Permissions(permisosControlador.CREAR_FACTURA)
+    async publishFactura(
+        @Req() request: Request,
+        @Res() response: Response
+    ) {
+        const startedAt = Date.now();
+        this.logger.debug(`[START] publishFactura - Usuario: ${request.body.usuario}, Organización: ${request.body.organizacionId}`);
+        const isPublished = await this.facturaManager.ExecutePublicarFormFactura(FacturaCreateRequestDto.toModel(request.body as FacturaCreateRequestDto));
+        const endedAt = Date.now();
+        this.logger.debug(`[END] publishFactura - Usuario: ${request.body.usuario}, Organización: ${request.body.organizacionId}, Duración: ${endedAt - startedAt}ms`);
+        if (!isPublished) {
+            this.logger.error(`Error al publicar la factura para usuario ${request.body.usuario} y organización ${request.body.organizacionId}`);
+            return response.status(400).json(new ApiResponse(HttpStatus.BAD_REQUEST, "Error al publicar la factura"));
+        }
+        return response.status(201).json(new ApiResponse(HttpStatus.CREATED, "Factura publicada exitosamente", isPublished));
     }
 
 }

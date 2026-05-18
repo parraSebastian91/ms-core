@@ -59,7 +59,7 @@ class RedesSociales {
 }
 
 export class UserProfileReqResDTO {
-    username: string;
+    userName: string;
     nombreCompleto: string;
     nombre: Nombre;
     datosContacto: DatosContacto;
@@ -68,7 +68,7 @@ export class UserProfileReqResDTO {
     ubicacion: string;
 
     constructor() {
-        this.username = "";
+        this.userName = "";
         this.nombreCompleto = "";
         this.nombre = new Nombre(new UserProfileModel());
         this.datosContacto = new DatosContacto(new UserProfileModel());
@@ -82,7 +82,7 @@ export class UserProfileReqResDTO {
 
         const dto = new UserProfileReqResDTO();
 
-        dto.username = model.username;
+        dto.userName = model.username;
         dto.nombre = new Nombre(model);
         dto.nombreCompleto = dto.nombre.getNombreCompleto();
         dto.datosContacto = new DatosContacto(model);
@@ -94,7 +94,7 @@ export class UserProfileReqResDTO {
 
     static toModel(dto: UserProfileReqResDTO): UserProfileModel {
         const model = new UserProfileModel();
-        model.username = dto.username;
+        model.username = dto.userName;
         model.nombres = dto.nombre.nombres;
         model.apellido_paterno = dto.nombre.apellidoPaterno;
         model.apellido_materno = dto.nombre.apellidoMaterno;

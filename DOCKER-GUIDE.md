@@ -85,7 +85,7 @@ The application uses these environment variables:
 - `PORT`: Application port (default: 3001)
 - `DATABASE_HOST`: PostgreSQL host
 - `DATABASE_PORT`: PostgreSQL port
-- `DATABASE_USER`: Database username
+- `DATABASE_USER`: Database userName
 - `DATABASE_PASSWORD`: Database password
 - `DATABASE_NAME`: Database name
 - `DATABASE_SCHEMA`: Database schema

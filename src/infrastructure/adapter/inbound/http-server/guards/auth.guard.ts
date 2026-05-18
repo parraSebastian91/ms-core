@@ -59,7 +59,7 @@ export class AuthGuard implements CanActivate {
       // Agregar información del usuario al request para uso posterior
       request['user'] = {
         userId: payload.userId,
-        username: payload.username,
+        userName: payload.userName,
         userUuid: payload.userUuid,
         roles: tokenRoles,
         permissions: tokenPermissions,

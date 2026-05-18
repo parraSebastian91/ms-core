@@ -31,4 +31,24 @@ export class UserProfileModel {
         this.numero_documento = "";
         this.tipo_contacto = "";
     }
+
+    static fromData(row: any): UserProfileModel {   
+        console.log("Mapping data to UserProfileModel:", row); // Debug log to check the input data      
+        const userProfile = new UserProfileModel();
+        userProfile.username = row.username;
+        userProfile.ingreso = row.ingreso;
+        userProfile.activo = row.activo;
+        userProfile.nombres = row.nombres;
+        userProfile.apellido_paterno = row.apellido_paterno;
+        userProfile.apellido_materno = row.apellido_materno;
+        userProfile.direccion = row.direccion;
+        userProfile.celular = row.celular;
+        userProfile.correo = row.correo;
+        userProfile.fecha_nacimiento = row.fecha_nacimiento;
+        userProfile.redes_sociales = row.redes_sociales;
+        userProfile.tipo_documento = row.tipo_documento;
+        userProfile.numero_documento = row.numero_documento;
+        userProfile.tipo_contacto = row.tipo_contacto;
+        return userProfile;
+    }
 }

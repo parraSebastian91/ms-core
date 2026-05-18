@@ -4,7 +4,10 @@ export class FacturaModel {
     publiInvoiceId: string;
     assetId: string;
     ownerUUID: string;
-    gestor: string;
+    gestor: {
+        uuid: string;
+        username: string;
+    };
     nombre_mandante: string;
     rut_mandante: string;
     deudorNombre: string;
@@ -16,7 +19,7 @@ export class FacturaModel {
     correlationId: string;
     storage_key: string;
     ofertas: number;
-    constructor(ownerUUID: string, gestor: string, status: facturaEstado, correlationId: string) {
+    constructor(ownerUUID: string, gestor: { uuid: string, username: string }, status: facturaEstado, correlationId: string) {
         this.assetId = "";
         this.ownerUUID = ownerUUID;
         this.gestor = gestor;
@@ -36,7 +39,10 @@ export class FacturaModel {
     static fromEntity(entity: any): FacturaModel {
         const factura = new FacturaModel(
             entity.organizacion_uuid,
-            entity.gestor,
+            {
+                uuid: entity.gestor_uuid,
+                username: entity.gestor
+            },
             entity.status,
             entity.correlation_id
         );

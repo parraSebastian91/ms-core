@@ -17,6 +17,7 @@ export enum facturaEstado {
 
 export enum EVENT_CODES {
     FACTURA_PUBLICADA = "FACTURA_PUBLICADA",
+    FACTURA_PUBLICADA_PENDIENTE_VALIDACION = "FACTURA_PUBLICADA_PENDIENTE_VALIDACION",
     FACTURA_VACIA_PUBLICADA = "FACTURA_VACIA_PUBLICADA",
     FACTURA_DUPLICADA = "FACTURA_DUPLICADA",
     FACTURA_PROCESADA = "FACTURA_PROCESADA",
@@ -31,6 +32,7 @@ export enum EVENT_DESCRIPTIONS {
     FACTURA_PROCESADA = "Factura procesada exitosamente",
     FACTURA_ERROR_PROCESAMIENTO = "Error al procesar la factura",
     FACTURA_ERROR_VALIDACION = "Error de validación de la factura, Usuario u organización no válidos",
+    FACTURA_PUBLICADA_PENDIENTE_VALIDACION = "Factura publicada exitosamente, pendiente de validación",
 }
 
 export enum ROLE_PERMISSION_CODES {

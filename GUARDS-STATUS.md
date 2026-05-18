@@ -50,7 +50,7 @@ exports: [
 ### Usuario Controller (`/usuario`)
 - `POST /usuario` - Crear usuario (requiere permiso `usuario.crear`)
 - `GET /usuario` - Listar usuarios (requiere permiso `usuario.listar`)  
-- `GET /usuario/username/:username` - Buscar por username (requiere permiso `usuario.ver`)
+- `GET /usuario/userName/:userName` - Buscar por userName (requiere permiso `usuario.ver`)
 - `GET /usuario/id/:id` - Buscar por ID (requiere permiso `usuario.ver`)
 - `GET /usuario/me` - Información del usuario actual (solo autenticación)
 - `GET /usuario/profile` - Perfil completo con permisos (solo autenticación)
@@ -66,7 +66,7 @@ exports: [
 ```bash
 curl -X POST http://localhost:3001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "tu_usuario", "password": "tu_password"}'
+  -d '{"userName": "tu_usuario", "password": "tu_password"}'
 ```
 
 ### 2. Usar Token en Rutas Protegidas

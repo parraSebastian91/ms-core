@@ -19,7 +19,7 @@ Según tu AuthService, el token contiene:
 ```json
 {
   "id": "usuario_id",
-  "username": "nombre_usuario",
+  "userName": "nombre_usuario",
   "rol": ["ADMIN", "USER"],           // Códigos de roles
   "permisos": ["USR_VIEW", "USR_CREATE"] // Códigos de permisos
 }
@@ -32,12 +32,12 @@ Según tu AuthService, el token contiene:
 ```javascript
 // Pre-request Script con Debug
 const loginUrl = pm.globals.get("baseUrl") + "/auth/login";
-const username = pm.globals.get("username") || "tu_usuario";
+const userName = pm.globals.get("userName") || "tu_usuario";
 const password = pm.globals.get("password") || "tu_password";
 
 console.log("🔐 Iniciando login...");
 console.log("URL:", loginUrl);
-console.log("Usuario:", username);
+console.log("Usuario:", userName);
 
 const loginRequest = {
     url: loginUrl,
@@ -48,7 +48,7 @@ const loginRequest = {
     body: {
         mode: 'raw',
         raw: JSON.stringify({
-            username: username,
+            userName: userName,
             password: password,
             typeDevice: "postman"
         })
@@ -94,7 +94,7 @@ pm.sendRequest(loginRequest, function (err, response) {
 ### Variables de Entorno Requeridas
 ```
 baseUrl = http://localhost:3001
-username = tu_usuario_real
+userName = tu_usuario_real
 password = tu_password_real
 ```
 
@@ -105,7 +105,7 @@ El `PermissionsGuard` ahora incluye logs detallados:
 
 ```bash
 # Logs que verás en la consola del servidor:
-Token payload: { id: "123", username: "admin", rol: ["ADMIN"], permisos: ["USR_VIEW", "USR_CREATE"] }
+Token payload: { id: "123", userName: "admin", rol: ["ADMIN"], permisos: ["USR_VIEW", "USR_CREATE"] }
 Roles del token (códigos): ["ADMIN"]
 Permisos del token (códigos): ["USR_VIEW", "USR_CREATE"]
 Usando roles y permisos del token
@@ -117,7 +117,7 @@ POST /usuario
 Authorization: Bearer eyJ0eXAiOiJKV1Q...
 
 # En el servidor verás:
-Token payload: { id: "123", username: "admin", rol: ["ADMIN"], permisos: ["USR_CREATE"] }
+Token payload: { id: "123", userName: "admin", rol: ["ADMIN"], permisos: ["USR_CREATE"] }
 Roles del token (códigos): ["ADMIN"]  
 Permisos del token (códigos): ["USR_CREATE"]
 ✅ Permiso USR_CREATE encontrado - Acceso permitido
@@ -129,7 +129,7 @@ GET /usuario
 Authorization: Bearer eyJ0eXAiOiJKV1Q...
 
 # En el servidor verás:
-Token payload: { id: "456", username: "user", rol: ["USER"], permisos: ["USR_READ"] }
+Token payload: { id: "456", userName: "user", rol: ["USER"], permisos: ["USR_READ"] }
 Roles del token (códigos): ["USER"]
 Permisos del token (códigos): ["USR_READ"]
 ❌ Error: Acceso denegado. Permisos requeridos: USR_VIEW, SYS_ADMIN

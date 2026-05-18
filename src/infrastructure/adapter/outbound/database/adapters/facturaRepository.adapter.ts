@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
+import { facturaEstado } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
@@ -23,7 +24,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
         const query = `
         INSERT INTO ${schema}.factura 
-        (${factura.assetId != "" ? "asset_id, " : ""} organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor) 
+        (${factura.assetId != "" ? "asset_id, " : ""} organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor_usuario_uuid) 
         ${factura.assetId != "" ? "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" : "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"}
         RETURNING id`;
 
@@ -39,7 +40,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.fechaVencimiento,
                 String(factura.status),
                 factura.correlationId,
-                factura.gestor
+                factura.gestor.uuid ? factura.gestor.uuid : factura.gestor
             ];
         } else {
             values = [
@@ -51,7 +52,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.fechaVencimiento,
                 String(factura.status),
                 factura.correlationId,
-                factura.gestor
+                factura.gestor.uuid ? factura.gestor.uuid : factura.gestor
             ];
         }
 
@@ -84,7 +85,8 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             org.razon_social    AS nombre_mandante,
             org.rut             AS rut_mandante,
             fct.asset_id,
-            fct.gestor,
+            usr.userName AS gestor,
+            fct.gestor_usuario_uuid  AS gestor_uuid, 
             fct.deudor_nombre,
             fct.deudor_rut,
             fct.factura_numero,
@@ -100,6 +102,8 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 ELSE 'N/A'
             END AS storage_key
         FROM factura.factura fct
+        JOIN core.usuario usr
+            ON usr.usuario_uuid = fct.gestor_usuario_uuid
         JOIN core.organizacion org
             ON org.organizacion_uuid = fct.organizacion_id
         JOIN media.media_assets ma
@@ -128,7 +132,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 JOIN core.grupo_trabajo gt
                     ON gt.lider_usuario_uuid = u.usuario_uuid
                 WHERE 
-                    ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $${params.length}
+                    ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $${params.length}
                     AND u.activo           = true
                     AND gt.activo          = true
                     AND gt.organizacion_id = fct.organizacion_id
@@ -136,17 +140,18 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         `;
         } else {
             params.push(usuario);
-            query += ` AND fct.gestor = $${params.length}`;
+            query += ` AND fct.gestor_usuario_uuid = $${params.length}`;
         }
 
         query += `
         GROUP BY
             fct.id,
             fct.organizacion_id,
-            org.razon_social,
+            org.razon_social,            
+            usr.userName,
             org.rut,
             fct.asset_id,
-            fct.gestor,
+            fct.gestor_usuario_uuid,
             fct.deudor_nombre,
             fct.deudor_rut,
             fct.factura_numero,
@@ -162,9 +167,6 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         try {
             const result = await this.dataSource.query(query, params);
             this.logger.debug(`Facturas obtenidas: ${JSON.stringify(result)}`);
-
-
-            // Aquí deberías mapear el resultado a FacturaModel[]
             return result.map((row: any) => FacturaModel.fromEntity(row)) || [];
         } catch (error: any) {
             this.logger.error(
@@ -204,16 +206,17 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
     }
 
     async updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null> {
+        const isDate = factura.campoEditado.nombre.includes("fecha");
         const query = `
         UPDATE 
             factura.factura 
         SET 
-            ${factura.campoEditado.nombreColumna}=${factura.campoEditado.valor}
-        WHERE id=$1 and status='PENDIENTE_VALIDACION' and gestor=$2 and organizacion_id=$3
+            ${factura.campoEditado.nombreColumna}=${isDate ? `'${new Date(factura.campoEditado.valor).toISOString()}'` : factura.campoEditado.valor}
+        WHERE id=$1 and status='PENDIENTE_VALIDACION' and gestor_usuario_uuid=$2 and organizacion_id=$3
         RETURNING id
         `;
         try {
-            const result = await this.dataSource.query(query, [ factura.id, factura.gestor, factura.ownerUUID]);
+            const result = await this.dataSource.query(query, [factura.id, factura.gestor, factura.ownerUUID]);
             if (result.length > 0) {
                 return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: true, mensaje: "Factura actualizada exitosamente" };
             } else {
@@ -227,6 +230,57 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 error?.stack,
             );
             return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: null, mensaje: "Error al actualizar la factura" };
+        }
+    }
+
+    async facturaExiste(facturaId: string, facturaNumero: string, owner: string): Promise<boolean> {
+        const query = `
+        SELECT COUNT(*) > 0 AS existe
+        FROM factura.factura fct
+        WHERE 
+        ${facturaId !== '' ? 
+            'fct.id = $1 AND fct.organizacion_id = $2 AND fct.factura_numero = $3;' : 
+            'fct.organizacion_id = $1 AND fct.factura_numero = $2;'}`;
+
+        const params = facturaId !== '' ? [facturaId, owner, facturaNumero] : [owner, facturaNumero];
+
+        try {
+            const result = await this.dataSource.query(query, params);
+            return result[0]?.existe || false;
+        } catch (error: any) {
+            this.logger.error(
+                `Error al verificar si la factura existe: ${error?.message ?? error}`,
+                `facturaID: ${facturaId}, owner: ${owner}`,
+                error?.stack,
+            );
+            return false;
+        }
+    }
+
+    async updateFacturaState(factura: FacturaModel, status: facturaEstado): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string }> {
+        const query = `
+        UPDATE 
+            factura.factura 
+        SET 
+            status=$3
+        WHERE id=$1 and organizacion_id=$2
+        RETURNING id
+        `;
+        try {
+            const result = await this.dataSource.query(query, [factura.publiInvoiceId, factura.ownerUUID, status]);
+            if (result.length > 0) {
+                return { id: factura.publiInvoiceId, valor: status, isUpdate: true, mensaje: "Estado de la factura actualizado exitosamente" };
+            } else {
+                this.logger.warn(`No se pudo actualizar el estado de la factura, verifica que el ID sea correcto y que la factura exista, facturaID: ${factura.publiInvoiceId}`);
+                return { id: factura.publiInvoiceId, valor: factura.status, isUpdate: false, mensaje: "No se pudo actualizar el estado de la factura" };
+            }
+        } catch (error: any) {
+            this.logger.error(
+                `Error al actualizar el estado de la factura: ${error?.message ?? error}`,
+                `facturaID: ${factura.publiInvoiceId}`,
+                error?.stack,
+            );
+            return { id: factura.publiInvoiceId, valor: factura.status, isUpdate: null, mensaje: "Error al actualizar el estado de la factura" };
         }
     }
 }

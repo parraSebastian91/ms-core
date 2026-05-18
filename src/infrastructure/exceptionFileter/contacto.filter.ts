@@ -10,6 +10,7 @@ import { UpdateError } from "src/core/share/errors/Update.error";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 import { DomainException } from "src/core/share/errors/DomainException";
+import { FacturaError } from "src/core/share/errors/Factura.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -21,13 +22,13 @@ export class CoreExceptionFilter implements ExceptionFilter {
         let status = 500;
         let message = "Internal server error";
 
-        
 
-        if(exception instanceof UnauthorizedException) {
+
+        if (exception instanceof UnauthorizedException) {
             Logger.warn(`UnauthorizedException: ${exception.message}`);
             status = HttpStatus.UNAUTHORIZED;
             message = exception.message;
-        }else if(exception instanceof TypeORMError) {
+        } else if (exception instanceof TypeORMError) {
             Logger.warn(`DB error: ${exception.message}`);
             status = HttpStatus.FORBIDDEN;
             message = exception.message;
@@ -81,12 +82,16 @@ export class CoreExceptionFilter implements ExceptionFilter {
             Logger.error(`UserAndOrgError: ${exception.message}`, exception.stack);
             status = HttpStatus.BAD_REQUEST;
             message = exception.message;
-        }     
+        }
         else if (exception instanceof DomainException) {
             Logger.error(`DomainException: ${exception.message}`, exception.stack);
             status = HttpStatus.BAD_REQUEST;
             message = exception.message;
-        }   
+        } else if (exception instanceof FacturaError) {
+            Logger.error(`FacturaError: ${exception.message}`, exception.stack);
+            status = HttpStatus.BAD_REQUEST;
+            message = exception.message;
+        }
         else {
             console.error(`Exception caught: ${exception.message}`, exception.stack);
             Logger.error(`Unexpected error: ${exception.message}`, exception.stack);
