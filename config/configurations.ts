@@ -41,5 +41,15 @@ export default () => ({
     routingKey: process.env.RABBITMQ_ROUTING_KEY || 'dte.process.notification',
     routingKeyFail: process.env.RABBITMQ_ROUTING_KEY_FAIL || 'dte.process.notification.fail',
   },
+  externalServices: {
+    core: {
+      baseUrl: process.env.CORE_SERVICE_BASE_URL || 'http://ms_core:3001',
+      timeout: parseInt(process.env.CORE_SERVICE_TIMEOUT ?? '8000', 10),
+    },
+    storage: {
+      baseUrl: process.env.STORAGE_SERVICE_URL || 'http://ms-storage-service:3100',
+      timeout: parseInt(process.env.STORAGE_SERVICE_TIMEOUT ?? '8000', 10),
+    }
+  }
 });
 

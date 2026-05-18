@@ -10,6 +10,7 @@ import { FacturaManagerUseCase } from './usesCase/facturaManager/facturaManager.
 import { IMessagePublisher } from '../domain/puertos/inbound/message.publisher.interface';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { IWorkTeamRepository } from '../domain/puertos/outbound/IWorkTeam.rerpository';
+import { IStorageService } from '../domain/puertos/outbound/IStorageService.interface';
 
 export type ApplicationModuleOptions = {
     modules: any[];
@@ -18,7 +19,7 @@ export type ApplicationModuleOptions = {
         FacturaManagerRepository: Type<IFacturaManagerRepository>;
         QueueClientAdapter: Type<IMessagePublisher>;
         WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
-
+        StorageServiceAdapter: Type<IStorageService>;
     }
 }
 
@@ -35,7 +36,8 @@ export class ApplicationModule {
             UserProfileRepository,
             FacturaManagerRepository,
             QueueClientAdapter,
-            WorkTeamRepositoryAdapter
+            WorkTeamRepositoryAdapter,
+            StorageServiceAdapter
         } = adapters;
 
 
@@ -57,21 +59,25 @@ export class ApplicationModule {
                 ConfigService,
                 QueueClientAdapter,
                 UserProfileRepository,
-                WorkTeamRepositoryAdapter
+                WorkTeamRepositoryAdapter,
+                StorageServiceAdapter
             ],
             useFactory: (
                 facturaManagerRepository: IFacturaManagerRepository,
                 configService: ConfigService,
                 messagePublisher: IMessagePublisher,
                 userProfileRepository: IUserProfileRepository,
-                workTeamRepository: IWorkTeamRepository
+                workTeamRepository: IWorkTeamRepository,
+                storageServiceAdapter: IStorageService
             ) => {
                 return new FacturaManagerUseCase(
                     facturaManagerRepository,
                     userProfileRepository,
                     workTeamRepository,
                     messagePublisher,
-                    configService);
+                    configService,
+                    storageServiceAdapter
+                );
             }
         };
 

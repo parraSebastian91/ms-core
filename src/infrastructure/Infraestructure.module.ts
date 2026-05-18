@@ -2,7 +2,7 @@
 https://docs.nestjs.com/modules
 */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { DatabaseModule } from './adapter/outbound/database/databaseConfig.module';
 import { HttpServerModule } from './adapter/inbound/http-server/http-server.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -17,6 +17,10 @@ import { FacturaRepositoryAdapter } from './adapter/outbound/database/adapters/f
 import { MESSAGE_PUBLISHER } from 'src/core/domain/puertos/inbound/message.publisher.interface';
 import { QueueClientAdapter } from './adapter/outbound/queue/queue-client.adapter';
 import { WorkTeamRepositoryAdapter } from './adapter/outbound/database/adapters/workTeamRepositori.adapter';
+import { STORAGE_SERVICE } from 'src/core/domain/puertos/outbound/IStorageService.interface';
+import { AccessTokenContext } from './adapter/inbound/http-server/middleware/access-token.context';
+import axios, { AxiosHeaders } from 'axios';
+import { StorageServiceAdapter } from './adapter/outbound/external-Service/storageService.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -83,9 +87,59 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         FacturaRepositoryAdapter,
         QueueClientAdapter,
         WorkTeamRepositoryAdapter,
+        StorageServiceAdapter,
         {
             provide: MESSAGE_PUBLISHER,
             useExisting: QueueClientAdapter,
+        },
+        {
+            provide: STORAGE_SERVICE,
+            inject: [ConfigService, AccessTokenContext],
+            useFactory: (configService: ConfigService, accessTokenContext: AccessTokenContext) => {
+                const baseUrl = configService.get<string>('externalServices.storage.baseUrl');
+                const logger = new Logger('InfrastructureModule');
+                logger.debug(`Configurando cliente Axios para servicio Storage con baseURL: ${baseUrl}`);
+                const client = axios.create({
+                    baseURL: baseUrl,
+                    timeout: configService.get<number>('externalServices.storage.timeout') ?? 8000,
+                });
+
+                client.interceptors.request.use((config) => {
+                    const token = accessTokenContext.getAccessToken();
+                    const correlationId = accessTokenContext.getCorrelationId();
+                    if (!token && !correlationId) {
+                        return config;
+                    }
+
+                    if (config.headers && typeof (config.headers as any).set === 'function') {
+                        if (correlationId) {
+                            (config.headers as any).set('X-Correlation-Id', correlationId);
+                        }
+                        if (token) {
+                            (config.headers as any).set('access_token', token);
+                            if (!(config.headers as any).has?.('Authorization')) {
+                                (config.headers as any).set('Authorization', `Bearer ${token}`);
+                            }
+                        }
+                        return config;
+                    }
+
+                    const headers = AxiosHeaders.from(config.headers ?? {});
+                    if (correlationId) {
+                        headers.set('X-Correlation-Id', correlationId);
+                    }
+                    if (token) {
+                        headers.set('access_token', token);
+                        if (!headers.has('Authorization')) {
+                            headers.set('Authorization', `Bearer ${token}`);
+                        }
+                    }
+                    config.headers = headers;
+
+                    return config;
+                });
+                return client;
+            }
         },
     ],
     exports: [
@@ -93,6 +147,8 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         FacturaRepositoryAdapter,
         QueueClientAdapter,
         WorkTeamRepositoryAdapter,
+        StorageServiceAdapter,
+        STORAGE_SERVICE
     ],
 })
 export class InfraestructureModule { }

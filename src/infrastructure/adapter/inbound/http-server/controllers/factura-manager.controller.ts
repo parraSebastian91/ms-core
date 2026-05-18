@@ -2,7 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Controller, Get, HttpStatus, Inject, Logger, Param, Patch, Post, Req, Res, UseFilters } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Inject, Logger, Param, Patch, Post, Req, Res, UseFilters } from '@nestjs/common';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IFacturaManager } from 'src/core/domain/puertos/inbound/IFacturaPublisher.interface';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
@@ -28,6 +28,28 @@ export class FacturaManagerController {
 
     constructor(@Inject('FACTURA_MANAGER_USE_CASE') private readonly facturaManager: IFacturaManager) { }
 
+    @Post("url")
+    @Permissions(permisosControlador.VER_FACTURA, permisosControlador.READ_ONLY)
+    async getUrlFacturas(
+        @Body() Body: {
+            userUUID: string,
+            organizacionUUID: string,
+            facturas: string[]
+        },
+        @Req() req: Request,
+        @Res() response: Response
+    ) {
+        const startedAt = Date.now();
+        const correlationId = req["correlationId"];
+        this.logger.log(`[START] getUrlFacturas `);
+
+        const facturas = await this.facturaManager.ExecuteGetUrlFacturas(Body.facturas, correlationId);
+        const endDate = new Date();
+        const duration = endDate.getTime() - startedAt;
+        this.logger.log(`[END] getUrlFacturas - Duración: ${duration}ms`);
+        return response.status(200).json(new ApiResponse(HttpStatus.OK, "Extracción exitosa", facturas));
+    }
+
     /**
      * 
      * @param uuid Identificador de usuario
@@ -44,7 +66,6 @@ export class FacturaManagerController {
         this.logger.log(`[START] getFacturas `);
 
         const facturas = await this.facturaManager.ExecuteGetFacturas(usuario, orgUUID);
-        console.log( facturas); // Agrega este log para verificar las facturas obtenidas
         const endDate = new Date();
         const duration = endDate.getTime() - initDAte.getTime();
         this.logger.log(`[END] getFacturas - Duración: ${duration}ms`);

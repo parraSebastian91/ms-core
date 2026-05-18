@@ -6,5 +6,6 @@ export interface IFacturaManager {
     ExecutePublicarFormFactura(factura: FacturaModel): Promise<FacturaModel>;
     ExecuteGetFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]>;
     ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{ campo: string, id: string, valor: any, isUpdate: any, mensaje: string } | null>;
+    ExecuteGetUrlFacturas(facturaID: string[], correlationId: string): Promise<{ id: string, keyUrl: string }[]>;
 
 }

@@ -3,7 +3,7 @@ https://docs.nestjs.com/modules
 */
 
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthGuard } from './guards/auth.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
@@ -12,6 +12,9 @@ import { RolesGuard } from './guards/roles.guard';
 import { WebhookController } from './controllers/webhook.controller';
 import { HealthcheckController } from './controllers/healthcheck.controller';
 import { FacturaManagerController } from './controllers/factura-manager.controller';
+import { AccessTokenInterceptor } from './middleware/access-token.interceptor';
+import { LoggerInterceptor } from './middleware/loggin.interceptor';
+import { AccessTokenContext } from './middleware/access-token.context';
 
 @Module({
     imports: [
@@ -27,10 +30,14 @@ import { FacturaManagerController } from './controllers/factura-manager.controll
         FacturaManagerController
     ],
     providers: [
+        AccessTokenContext,
         AuthGuard,
         PermissionsGuard,
         RolesGuard,
-        // Aplicar AuthGuard globalmente
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: LoggerInterceptor,
+        },
         {
             provide: APP_GUARD,
             useClass: AuthGuard,
@@ -43,6 +50,13 @@ import { FacturaManagerController } from './controllers/factura-manager.controll
             provide: APP_GUARD,
             useClass: PermissionsGuard,
         },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: AccessTokenInterceptor,
+        },
+    ],
+    exports: [
+        AccessTokenContext
     ],
 })
 export class HttpServerModule { }

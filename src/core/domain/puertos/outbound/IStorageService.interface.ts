@@ -1,7 +1,8 @@
 
+export const STORAGE_SERVICE = 'STORAGE_SERVICE';
+
 export interface IStorageService {
-    uploadFile(file: { buffer: Buffer; originalname: string; mimetype: string; size: number; }): Promise<string>;
-    deleteFile(fileUrl: string): Promise<void>;
+    getPresignedGetUrl(storageKey: string, correlationId: string): Promise<string>;
 }
 
 export interface AvatarImageData {

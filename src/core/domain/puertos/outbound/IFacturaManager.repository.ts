@@ -10,4 +10,5 @@ export interface IFacturaManagerRepository {
     updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null>;
     facturaExiste(facturaId: string, facturaNumero: string, owner: string): Promise<boolean>;
     updateFacturaState(factura: FacturaModel, status: facturaEstado): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string }>;
+    getFacturaKey(facturaID: string[]): Promise<{ id: string, keyUrl: string }[]>;
 }

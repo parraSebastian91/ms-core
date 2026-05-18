@@ -50,6 +50,9 @@ export class NotifyModel {
     @Type(() => NotifyPayload)
     payload: NotifyPayload;
 
+    @IsString()
+    asset_id: string;
+
     static toModel(data: NotifyModel): FacturaModel {
         const factura = new FacturaModel(data.ownerUUID, { username: data.gestor, uuid: data.gestor }, facturaEstado.PENDIENTE_VALIDACION, data.correlationId);
         factura.facturaNumero = data.payload.numeroFactura.join(";");
@@ -57,6 +60,7 @@ export class NotifyModel {
         factura.deudorNombre = data.payload.nombreDeudor.join(";");
         factura.montoTotal = parseFloat(data.payload.montoTotal.join(";"));
         factura.correlationId = data.correlationId;
+        factura.assetId = data.asset_id;
         return factura;
     }
 }

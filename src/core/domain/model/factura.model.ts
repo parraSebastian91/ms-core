@@ -17,7 +17,6 @@ export class FacturaModel {
     fechaVencimiento: Date;
     status: facturaEstado;
     correlationId: string;
-    storage_key: string;
     ofertas: number;
     constructor(ownerUUID: string, gestor: { uuid: string, username: string }, status: facturaEstado, correlationId: string) {
         this.assetId = "";
@@ -32,7 +31,6 @@ export class FacturaModel {
         this.fechaVencimiento = new Date();
         this.status = status;
         this.correlationId = correlationId;
-        this.storage_key = "";
         this.ofertas = 0;
     }
 
@@ -55,7 +53,6 @@ export class FacturaModel {
         factura.facturaNumero = entity.factura_numero;
         factura.montoTotal = entity.monto_total;
         factura.fechaVencimiento = new Date(entity.fecha_vencimiento);
-        factura.storage_key = entity.storage_key;
         factura.ofertas = entity.ofertas || 0;
         return factura;
     }

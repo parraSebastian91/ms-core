@@ -6,6 +6,7 @@ import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManager } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
 import { IMessagePublisher } from "src/core/domain/puertos/inbound/message.publisher.interface";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
+import { IStorageService } from "src/core/domain/puertos/outbound/IStorageService.interface";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { IWorkTeamRepository } from "src/core/domain/puertos/outbound/IWorkTeam.rerpository";
 import { FacturaError } from "src/core/share/errors/Factura.error";
@@ -21,7 +22,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
         private readonly userProfileRepository: IUserProfileRepository,
         private readonly workTeamRepository: IWorkTeamRepository,
         private readonly messagePublisher: IMessagePublisher,
-        private configService: ConfigService
+        private configService: ConfigService,
+        private readonly storageServiceAdapter: IStorageService
     ) { }
 
     async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
@@ -41,10 +43,6 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 username: gestorUsername
             }
         }
-        console.log("Gestor username:", gestorUsername);
-        console.log("Validación de usuario y organización:", validateUserAndOrganizacion);
-        console.log(factura.gestor && typeof factura.gestor === "string" && !isUUID.test(factura.gestor) && validateUserAndOrganizacion.isValid);
-        console.log("Factura antes de publicación:", factura);
 
         const publishNotification = (
             routingKey: string,
@@ -235,6 +233,15 @@ export class FacturaManagerUseCase implements IFacturaManager {
         }
         const { id, valor, isUpdate, mensaje } = await this.facturaRepository.updateFactura(factura);
         return { campo: factura.campoEditado.nombre, id, valor, isUpdate, mensaje };
+    }
+
+    async ExecuteGetUrlFacturas(facturaID: string[], correlationId: string): Promise<{ id: string, keyUrl: string }[]> {
+        const result = await this.facturaRepository.getFacturaKey(facturaID);
+        const presignedUrls = await Promise.all(result.map(async (item) => {
+            const keyUrl = await this.storageServiceAdapter.getPresignedGetUrl(item.keyUrl, correlationId);
+            return { id: item.id, keyUrl };
+        }));
+        return presignedUrls || [];
     }
 
 }

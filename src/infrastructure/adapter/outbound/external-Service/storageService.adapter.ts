@@ -1,20 +1,33 @@
-import { IStorageService } from "src/core/domain/puertos/outbound/IStorageService.interface";
+import { Inject, InternalServerErrorException, Logger, NotFoundException } from "@nestjs/common";
+import { AxiosInstance, isAxiosError } from "axios";
+import { IStorageService, STORAGE_SERVICE } from "src/core/domain/puertos/outbound/IStorageService.interface";
+import { ApiResponse } from "../../inbound/http-server/model/api-response.model";
 
 export class StorageServiceAdapter implements IStorageService {
 
+    private readonly logger = new Logger(StorageServiceAdapter.name);
+
+    constructor(
+        @Inject(STORAGE_SERVICE) private readonly storageClient: AxiosInstance,
+    ) { } 
     
-
-    async uploadFile(file: { buffer: Buffer; originalname: string; mimetype: string; size: number; }): Promise<string> {
-        // Aquí iría la lógica para subir el archivo a un servicio de almacenamiento (ej: AWS S3, Google Cloud Storage, etc.)
-        // Por simplicidad, vamos a simular que el archivo se sube y se devuelve una URL
-        const simulatedUrl = `https://storage.service.com/${file.originalname}`;
-        return simulatedUrl;
-    }
-
-    async deleteFile(fileUrl: string): Promise<void> {
-        // Aquí iría la lógica para eliminar el archivo del servicio de almacenamiento
-        // Por simplicidad, vamos a simular que el archivo se elimina correctamente
-        console.log(`Archivo eliminado: ${fileUrl}`);
+    async getPresignedGetUrl(storageKey: string, correlationId: string): Promise<string> {
+        const startedAt = Date.now();
+        this.logger.log(`[START] Storage.getPresignedGetUrl | storageKey=${storageKey} | correlationId=${correlationId}`);
+        try {
+            const { data } = await this.storageClient.get<ApiResponse<any>>(`api/v1/get-url?storage_key=${storageKey}&correlation_id=${correlationId}`);
+            this.logger.log(`[OK] Storage.getPresignedGetUrl | storageKey=${storageKey} | correlationId=${correlationId} | durationMs=${Date.now() - startedAt}`);
+            const url = data['url'];
+            return url as string;
+        } catch (error: any) {
+            if (isAxiosError(error) && error.response?.status === 404) {
+                this.logger.warn(`[MISS] Storage.getPresignedGetUrl 404 | storageKey=${storageKey} | correlationId=${correlationId} | durationMs=${Date.now() - startedAt}`);
+                throw new NotFoundException(`Presigned URL not found for storage key ${storageKey} and correlation ID ${correlationId}`);
+            }
+            this.logger.error(`Error consultando servicio Storage para storage key ${storageKey} y correlation ID ${correlationId}: ${error.message} | durationMs=${Date.now() - startedAt}`, error.stack);
+            this.logger.debug(error.response ? `Respuesta del servicio Storage: ${JSON.stringify(error.response.data)}` : 'No response data');
+            throw new InternalServerErrorException('Error consultando servicio Storage');
+        }
     }
 
 }

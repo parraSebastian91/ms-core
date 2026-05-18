@@ -96,21 +96,12 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             fct.correlation_id,
             fct.created_at,
             COUNT(ofer.factura_id)  AS ofertas,
-            CASE
-                WHEN fct.status = 'PENDIENTE_VALIDACION'
-                    THEN mv.url_path
-                ELSE 'N/A'
-            END AS storage_key
+            fct.status
         FROM factura.factura fct
         JOIN core.usuario usr
             ON usr.usuario_uuid = fct.gestor_usuario_uuid
         JOIN core.organizacion org
             ON org.organizacion_uuid = fct.organizacion_id
-        JOIN media.media_assets ma
-            ON ma.owner_id  = org.organizacion_uuid
-            AND ma.category = 'DTE-factura'
-        JOIN media.media_variants mv
-            ON mv.asset_id  = ma.id
         LEFT JOIN factura.ofertas ofer       -- LEFT para incluir facturas sin ofertas
             ON ofer.factura_id = fct.id
         WHERE 1=1
@@ -159,8 +150,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             fct.fecha_vencimiento,
             fct.status,
             fct.correlation_id,
-            fct.created_at,
-            mv.url_path
+            fct.created_at
         ORDER BY fct.created_at DESC;
         `;
 
@@ -238,9 +228,9 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         SELECT COUNT(*) > 0 AS existe
         FROM factura.factura fct
         WHERE 
-        ${facturaId !== '' ? 
-            'fct.id = $1 AND fct.organizacion_id = $2 AND fct.factura_numero = $3;' : 
-            'fct.organizacion_id = $1 AND fct.factura_numero = $2;'}`;
+        ${facturaId !== '' ?
+                'fct.id = $1 AND fct.organizacion_id = $2 AND fct.factura_numero = $3;' :
+                'fct.organizacion_id = $1 AND fct.factura_numero = $2;'}`;
 
         const params = facturaId !== '' ? [facturaId, owner, facturaNumero] : [owner, facturaNumero];
 
@@ -283,4 +273,30 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             return { id: factura.publiInvoiceId, valor: factura.status, isUpdate: null, mensaje: "Error al actualizar el estado de la factura" };
         }
     }
+
+    async getFacturaKey(facturaID: string[]): Promise<{ id: string, keyUrl: string }[] | null> {
+        const query = ` select 
+                            fct.id as facturar_id,
+                            mv.url_path 
+                        from factura.factura fct 
+                            join media.media_assets ma 
+                                on ma.id = fct.asset_id 
+                            join media.media_variants mv 
+                                on ma.id = mv.asset_id
+                        where 
+                            fct.id in (${facturaID.map((_, index) => `$${index + 1}`).join(',')}) 
+                    `;
+        try {
+            const result = await this.dataSource.query(query, facturaID);
+            return result.map((row: any) => ({ id: row.facturar_id, keyUrl: row.url_path }));
+        } catch (error: any) {
+            this.logger.error(
+                `Error al obtener las claves de las facturas: ${error?.message ?? error}`,
+                `facturaIDs: ${facturaID.join(', ')}`,
+                error?.stack,
+            );
+            return null;
+        }
+    }
+
 }
