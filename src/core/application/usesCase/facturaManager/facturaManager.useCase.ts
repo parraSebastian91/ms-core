@@ -160,34 +160,32 @@ export class FacturaManagerUseCase implements IFacturaManager {
             // o se sube por formulario y se publica al tiro, en este caso no existar la factura antes de publicarla, por lo que se crea y publica al tiro, si ya existía se actualiza el estado a publicada
             let existeFactura = await this.facturaRepository.facturaExiste(factura.publiInvoiceId, factura.facturaNumero, factura.ownerUUID);
 
+            const statusInRequest = factura.status;
             if (existeFactura && factura.publiInvoiceId && factura.publiInvoiceId !== '') {
-                const resultQuery = await this.facturaRepository.updateFacturaState(factura, facturaEstado.PUBLICADA);
+                const resultQuery = await this.facturaRepository.updateFacturaState(factura, statusInRequest);
                 if (!resultQuery.isUpdate) {
                     this.logger.warn(`No se pudo actualizar el estado de la factura, verifica que el ID sea correcto y que la factura exista, facturaID: ${factura.publiInvoiceId}`);
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
                 }
-                factura.status = facturaEstado.PUBLICADA;
-                mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false);
+                mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false, true);
             } else if (existeFactura && (!factura.publiInvoiceId || factura.publiInvoiceId === '')) {
                 this.logger.warn(`Factura Duplicada, ya existe una factura con el mismo número para la organización, facturaNumero: ${factura.facturaNumero}`);
                 mensaje = new MessageDTO(EVENT_CODES.FACTURA_DUPLICADA, EVENT_DESCRIPTIONS.FACTURA_DUPLICADA, true);
-
             } else {
-                factura.status = facturaEstado.PUBLICADA;
                 const resultQuery = await this.facturaRepository.publishFactura(factura);
                 if (resultQuery.includes("error")) {
                     this.logger.error(`Error al publicar la factura para correlación: ${factura.correlationId}`);
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
+                } else if (statusInRequest && statusInRequest !== facturaEstado.PENDIENTE_AUTORIZACION) {
+                    this.logger.warn(`Factura Duplicada, ya existe una factura con el mismo número para la organización, facturaNumero: ${factura.facturaNumero}`);
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PENDIENTE_AUTORIZACION, EVENT_DESCRIPTIONS.FACTURA_PENDIENTE_AUTORIZACION, true);
                 } else {
                     this.logger.log(`Factura publicada exitosamente para correlación: ${factura.correlationId}`);
-                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false);
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false, true);
                 }
                 factura.publiInvoiceId = resultQuery;
             }
         }
-
-
-
 
         const notificacionBody: NotificacionDTO<FacturaDTO> = new NotificacionDTO<FacturaDTO>(
             CATEGORY_PROCESS.DTE_FACTURA,

@@ -26,10 +26,12 @@ export class MessageDTO {
     error: boolean;
     code: string;
     description: string;
-    constructor(code: string, description: string, error: boolean = false) {
+    broadcast: boolean;
+    constructor(code: string, description: string, error: boolean = false, broadcast: boolean = false) {
         this.code = code;
         this.description = description;
         this.error = error;
+        this.broadcast = broadcast;
     }
 }
 

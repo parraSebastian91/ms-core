@@ -4,6 +4,7 @@ export enum CATEGORY_PROCESS {
 }
 
 export enum facturaEstado {
+    PENDIENTE_AUTORIZACION = "PENDIENTE_AUTORIZACION",
     PENDIENTE_VALIDACION = "PENDIENTE_VALIDACION",
     PUBLICADA = "PUBLICADA",
     OFERTADA = "OFERTADA",
@@ -16,6 +17,7 @@ export enum facturaEstado {
 }
 
 export enum EVENT_CODES {
+    FACTURA_PENDIENTE_AUTORIZACION = "PENDIENTE_AUTORIZACION",
     FACTURA_PUBLICADA = "FACTURA_PUBLICADA",
     FACTURA_PUBLICADA_PENDIENTE_VALIDACION = "FACTURA_PUBLICADA_PENDIENTE_VALIDACION",
     FACTURA_VACIA_PUBLICADA = "FACTURA_VACIA_PUBLICADA",
@@ -26,6 +28,7 @@ export enum EVENT_CODES {
 }
 
 export enum EVENT_DESCRIPTIONS {
+    FACTURA_PENDIENTE_AUTORIZACION = "Factura pendiente de autorización, debe autorizar para poder publicar la factura",
     FACTURA_PUBLICADA = "Factura publicada exitosamente",
     FACTURA_VACIA_PUBLICADA = "Factura vacía publicada exitosamente",
     FACTURA_DUPLICADA = "Factura duplicada, ya existe una factura con el mismo emisor y folio",

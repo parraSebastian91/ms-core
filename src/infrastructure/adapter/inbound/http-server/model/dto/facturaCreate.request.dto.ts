@@ -14,7 +14,8 @@ export class FacturaCreateRequestDto {
         uuid: string;
         username: string;
     };
-    constructor(facturaId: string, ownerUUID: string, numeroFactura: string, rutDeudor: string, nombreDeudor: string, correlationId: string, montoTotal: number, fechaVencimiento: Date, gestor: { uuid: string, username: string }) {
+    status: facturaEstado;
+    constructor(facturaId: string, ownerUUID: string, numeroFactura: string, rutDeudor: string, nombreDeudor: string, correlationId: string, montoTotal: number, fechaVencimiento: Date, gestor: { uuid: string, username: string }, status: facturaEstado) {
         this.facturaId = facturaId;
         this.ownerUUID = ownerUUID;
         this.numeroFactura = numeroFactura;
@@ -24,15 +25,17 @@ export class FacturaCreateRequestDto {
         this.montoTotal = montoTotal;
         this.fechaVencimiento = fechaVencimiento;
         this.gestor = gestor;
+        this.status = status;
     }
 
     static toModel(dto: FacturaCreateRequestDto): FacturaModel {
         const factura = new FacturaModel(
             dto.ownerUUID,
             dto.gestor,
-            facturaEstado.PUBLICADA, // Asumiendo que el estado inicial es PUBLICADA (puedes ajustar esto según tus necesidades)
+            dto.status, // Usando el estado proporcionado en el DTO
             dto.correlationId // CorrelationId desde el DTO
         );
+        factura.status = dto.status; // Asegurando que el estado se establezca correctamente
         factura.publiInvoiceId = dto.facturaId;
         factura.ownerUUID = dto.ownerUUID;
         factura.facturaNumero = dto.numeroFactura;
