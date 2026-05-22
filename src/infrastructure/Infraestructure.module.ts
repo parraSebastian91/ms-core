@@ -47,7 +47,7 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         ]),
         NestConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: ['.env.dev', '.env'],
+            envFilePath: ['.env.dev'],
         }),
         ClientsModule.registerAsync([
             {

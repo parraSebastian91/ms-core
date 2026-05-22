@@ -2,9 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from './infrastructure/adapter/inbound/http-server/pipes/validation.pipe';
 
-
 import * as vault from 'node-vault';
-import { connect } from 'amqplib';
 
 async function preloadVaultToEnv() {
   const client = vault({

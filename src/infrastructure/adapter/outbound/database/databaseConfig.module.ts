@@ -11,15 +11,14 @@ import { SecretsModule } from '../../../secrets/secrets.module';
             imports: [SecretsModule, ConfigModule],
             inject: [VaultService, ConfigService],
             useFactory: async (vaultService: VaultService, configService: ConfigService) => {
-                const dbSecrets = vaultService.getAllSecrets('database');
                 return {
                     type: 'postgres',
-                    host: dbSecrets.DATABASE_HOST || configService.get('DATABASE_HOST') || 'localhost',
-                    port: parseInt(dbSecrets.DATABASE_PORT, 10) || parseInt(configService.get('DATABASE_PORT'), 10) || 5432,
-                    username: dbSecrets.DATABASE_USER || configService.get('DATABASE_USER') || 'desarrollo',
-                    password: dbSecrets.DATABASE_PASSWORD || configService.get('DATABASE_PASSWORD') || 'desarrollo123',
-                    database: dbSecrets.DATABASE_NAME || configService.get('DATABASE_NAME') || 'core_erp',
-                    schema: dbSecrets.DATABASE_SCHEMA || configService.get('DATABASE_SCHEMA') || 'core',
+                    host: configService.get('database.host') ,
+                    port: parseInt(configService.get('database.port'), 10) ,
+                    username: configService.get('database.username') ,
+                    password: configService.get('database.password') ,
+                    database: configService.get('database.database') ,
+                    schema: 'core' ,
                     entities: [__dirname + '/entities/*.entity{.ts,.js}'],
                     synchronize: false,  // ← NO usar true en producción
                     // ✅ ACTIVAR LOGGING COMPLETO
@@ -29,8 +28,9 @@ import { SecretsModule } from '../../../secrets/secrets.module';
                     // ✅ Ver todas las queries
                     maxQueryExecutionTime: 1000,
                     // ✅ Opciones adicionales de debugging
+                    ssl: true,
                     extra: {
-                        // Ver detalles de conexión
+                        ssl:true,
                         connectionTimeoutMillis: 5000,
                         query_timeout: 10000,
                         statement_timeout: 10000,
