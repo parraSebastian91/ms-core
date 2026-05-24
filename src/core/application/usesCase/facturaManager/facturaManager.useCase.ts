@@ -1,20 +1,21 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado } from "src/core/domain/model/constantes.model";
+import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, PERMISO_RECURSO, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManager } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
+import { IFacturaService } from "src/core/domain/puertos/inbound/IFacturaService.interface";
 import { IMessagePublisher } from "src/core/domain/puertos/inbound/message.publisher.interface";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { IStorageService } from "src/core/domain/puertos/outbound/IStorageService.interface";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { IWorkTeamRepository } from "src/core/domain/puertos/outbound/IWorkTeam.rerpository";
-import { FacturaError } from "src/core/share/errors/Factura.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 import { FacturaDTO } from "src/infrastructure/adapter/outbound/queue/dto/factura.dto";
 import { MessageDTO, NotificacionDTO } from "src/infrastructure/adapter/outbound/queue/dto/Notificacion.dto";
 
 export class FacturaManagerUseCase implements IFacturaManager {
+
     private readonly logger = new Logger(FacturaManagerUseCase.name);
 
     constructor(
@@ -23,7 +24,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
         private readonly workTeamRepository: IWorkTeamRepository,
         private readonly messagePublisher: IMessagePublisher,
         private configService: ConfigService,
-        private readonly storageServiceAdapter: IStorageService
+        private readonly storageServiceAdapter: IStorageService,
+        private readonly facturaService: IFacturaService
     ) { }
 
     async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
@@ -156,23 +158,51 @@ export class FacturaManagerUseCase implements IFacturaManager {
             this.logger.error(`Error de validación de usuario y organización para correlación: ${factura.correlationId}`);
             mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
         } else {
-            // 2 opciones, puede existirr ror rla subida de archivos, esta se crrrea antes de publicarrr
-            // o se sube por formulario y se publica al tiro, en este caso no existar la factura antes de publicarla, por lo que se crea y publica al tiro, si ya existía se actualiza el estado a publicada
-            let existeFactura = await this.facturaRepository.facturaExiste(factura.publiInvoiceId, factura.facturaNumero, factura.ownerUUID);
+            // 2 opciones, Puede existir o no el registro de factura, por lo que se valida si existe.
+            // si existe, se valvida que no este publicada. por facturaNumero y idOrganbizacion.
+            // si no existe, se crea con estado pendiente de autorizacion, y si el estado es PROCESANDO, se actualiza a publicado, si el estado es PENDIENTE_AUTORIZACION, se mantiene el estado enviado y no se manda a notificaciones.
 
+            let existeFactura = await this.facturaRepository.facturaExiste(factura.publiInvoiceId, factura.facturaNumero, factura.ownerUUID);
+            let resultadoCreacionPermisos;
             const statusInRequest = factura.status;
+            // Primer If: La factura existe y tiene un publiInvoiceId válido, se intenta actualizar el estado a publicado.
             if (existeFactura && factura.publiInvoiceId && factura.publiInvoiceId !== '') {
+                // Si existe registro de factura en base de datos, se vvalida estado PROCESANDO para asi permitir permisos de lectura a quien corresponda.
+                // si tiene estado PENDIENTE_AUTORIZACION, no se generan los permisos de lectura, quedando la factura en estado PENDIENTE_AUTORIZACION, notificando al usuario que debe aceptar los terminos de publicacion.
+
+                if (statusInRequest === facturaEstado.PENDIENTE_AUTORIZACION) {
+                    this.logger.warn(`Factura pendiente de autorización, debe autorizar para poder publicar la factura, correlación: ${factura.correlationId}`);
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PENDIENTE_AUTORIZACION, EVENT_DESCRIPTIONS.FACTURA_PENDIENTE_AUTORIZACION, true);
+                }
+
                 const resultQuery = await this.facturaRepository.updateFacturaState(factura, statusInRequest);
                 if (!resultQuery.isUpdate) {
                     this.logger.warn(`No se pudo actualizar el estado de la factura, verifica que el ID sea correcto y que la factura exista, facturaID: ${factura.publiInvoiceId}`);
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
                 }
-                mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false, true);
+
+                if (statusInRequest === facturaEstado.PROCESANDO && resultQuery.isUpdate) {
+                    this.logger.log(`Factura publicada exitosamente para correlación: ${factura.correlationId}`);
+                    resultadoCreacionPermisos = await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
+                        PERMISO_RECURSO.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, factura.publiInvoiceId, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA + ` Financieras Notificadas: ${resultadoCreacionPermisos}`, false, true);
+                }
+                // Segundo If: La factura existe y se intenta publicar nuevamente, se notifica factura duplicada.
             } else if (existeFactura && (!factura.publiInvoiceId || factura.publiInvoiceId === '')) {
                 this.logger.warn(`Factura Duplicada, ya existe una factura con el mismo número para la organización, facturaNumero: ${factura.facturaNumero}`);
                 mensaje = new MessageDTO(EVENT_CODES.FACTURA_DUPLICADA, EVENT_DESCRIPTIONS.FACTURA_DUPLICADA, true);
+                // ultimo caso: La factura no existe, se crea con estado PROCESANDO.
             } else {
+                factura.status = facturaEstado.PUBLICADA;
                 const resultQuery = await this.facturaRepository.publishFactura(factura);
+                if (statusInRequest === facturaEstado.PENDIENTE_AUTORIZACION) {
+                    this.logger.warn(`Factura pendiente de autorización, debe autorizar para poder publicar la factura, correlación: ${factura.correlationId}`);
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PENDIENTE_AUTORIZACION, EVENT_DESCRIPTIONS.FACTURA_PENDIENTE_AUTORIZACION, true);
+                } else {
+                    resultadoCreacionPermisos = await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
+                        PERMISO_RECURSO.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, resultQuery, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
+                }
+
                 if (resultQuery.includes("error")) {
                     this.logger.error(`Error al publicar la factura para correlación: ${factura.correlationId}`);
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
@@ -181,7 +211,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_PENDIENTE_AUTORIZACION, EVENT_DESCRIPTIONS.FACTURA_PENDIENTE_AUTORIZACION, true);
                 } else {
                     this.logger.log(`Factura publicada exitosamente para correlación: ${factura.correlationId}`);
-                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA, false, true);
+                    mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA + ` Financieras Notificadas: ${resultadoCreacionPermisos}`, false, true);
                 }
                 factura.publiInvoiceId = resultQuery;
             }

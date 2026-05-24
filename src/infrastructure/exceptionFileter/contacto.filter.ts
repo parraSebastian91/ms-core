@@ -11,6 +11,7 @@ import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 import { DomainException } from "src/core/share/errors/DomainException";
 import { FacturaError } from "src/core/share/errors/Factura.error";
+import { RepositoryAdapterError } from "src/core/share/errors/RepositoryAdapter.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -90,6 +91,10 @@ export class CoreExceptionFilter implements ExceptionFilter {
         } else if (exception instanceof FacturaError) {
             Logger.error(`FacturaError: ${exception.message}`, exception.stack);
             status = HttpStatus.BAD_REQUEST;
+            message = exception.message;
+        } else if (exception instanceof RepositoryAdapterError) {
+            Logger.error(`Error: ${exception.message}`, exception.stack);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
             message = exception.message;
         }
         else {

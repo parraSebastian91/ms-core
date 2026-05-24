@@ -11,6 +11,8 @@ import { QueueClientAdapter } from './infrastructure/adapter/outbound/queue/queu
 import { FacturaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/facturaRepository.adapter';
 import { WorkTeamRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/workTeamRepositori.adapter';
 import { StorageServiceAdapter } from './infrastructure/adapter/outbound/external-Service/storageService.adapter';
+import { organizacionRepositoriAdapter } from './infrastructure/adapter/outbound/database/adapters/organizacionRepository.adapter';
+import { PermisosRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/permisosManagerRepository.adapter';
 
 @Module({
   imports: [
@@ -26,7 +28,9 @@ import { StorageServiceAdapter } from './infrastructure/adapter/outbound/externa
         FacturaManagerRepository: FacturaRepositoryAdapter,
         QueueClientAdapter: QueueClientAdapter,
         WorkTeamRepositoryAdapter: WorkTeamRepositoryAdapter,
-        StorageServiceAdapter: StorageServiceAdapter
+        StorageServiceAdapter: StorageServiceAdapter,
+        OrganizacionRepository: organizacionRepositoriAdapter,
+        PermisosManagerRepository: PermisosRepositoryAdapter
       },
     }),
     JwtModule.register({

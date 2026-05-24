@@ -10,6 +10,8 @@ import { IMessagePublisher } from './domain/puertos/inbound/message.publisher.in
 import { IFacturaManagerRepository } from './domain/puertos/outbound/IFacturaManager.repository';
 import { IWorkTeamRepository } from './domain/puertos/outbound/IWorkTeam.rerpository';
 import { IStorageService } from './domain/puertos/outbound/IStorageService.interface';
+import { IOrganizacionRepository } from './domain/puertos/outbound/IOrganizacion.repository';
+import { IPermisosManagerRepository } from './domain/puertos/outbound/IPermisosManager.repository';
 
 export type CoreModuleOptions = {
     modules: any[];
@@ -19,6 +21,8 @@ export type CoreModuleOptions = {
         QueueClientAdapter: Type<IMessagePublisher>,
         WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
         StorageServiceAdapter: Type<IStorageService>;
+        OrganizacionRepository: Type<IOrganizacionRepository>;
+        PermisosManagerRepository: Type<IPermisosManagerRepository>;
     }
 }
 
@@ -34,7 +38,9 @@ export class CoreModule {
             FacturaManagerRepository,
             QueueClientAdapter,
             WorkTeamRepositoryAdapter,
-            StorageServiceAdapter
+            StorageServiceAdapter,
+            OrganizacionRepository,
+            PermisosManagerRepository
         } = adapters;
 
         return {
@@ -50,7 +56,9 @@ export class CoreModule {
                         FacturaManagerRepository,
                         QueueClientAdapter,
                         WorkTeamRepositoryAdapter,
-                        StorageServiceAdapter
+                        StorageServiceAdapter,
+                        OrganizacionRepository,
+                        PermisosManagerRepository
                     }
                 })
             ],

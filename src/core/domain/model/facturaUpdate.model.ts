@@ -6,7 +6,8 @@ export enum CampoFactura {
     RUT_DEUDOR = "rutDeudor",
     NOMBRE_RAZON_SOCIAL_DEUDOR = "nombreRazonSocialDeudor",
     MONTO_TOTAL = "montoTotal",
-    FECHA_VENCIMIENTO = "fechaVencimiento"
+    FECHA_VENCIMIENTO = "fechaVencimiento",
+    STATUS = "status"
 }
 
 export enum ColumnaFactura {
@@ -15,7 +16,8 @@ export enum ColumnaFactura {
     RUT_DEUDOR = "deudor_rut",
     NOMBRE_RAZON_SOCIAL_DEUDOR = "deudor_nombre",
     MONTO_TOTAL = "monto_total",
-    FECHA_VENCIMIENTO = "fecha_vencimiento"
+    FECHA_VENCIMIENTO = "fecha_vencimiento",
+    STATUS = "status"
 }
 
 export class FacturaUpdateModel {
@@ -27,7 +29,11 @@ export class FacturaUpdateModel {
     constructor(id: string, ownerUUID: string, gestor: string, campoEditado: CampoEditado) {
         this.id = id;
         this.ownerUUID = ownerUUID;
-        this.gestor = gestor;
+        if (typeof gestor === 'string') {
+            this.gestor = gestor.trim();
+        }else {
+            this.gestor = gestor["uuid"];
+        }
         this.campoEditado = campoEditado;
     }
 
@@ -40,7 +46,8 @@ export class CampoEditado {
         CampoFactura.RUT_DEUDOR,
         CampoFactura.NOMBRE_RAZON_SOCIAL_DEUDOR,
         CampoFactura.MONTO_TOTAL,
-        CampoFactura.FECHA_VENCIMIENTO
+        CampoFactura.FECHA_VENCIMIENTO,
+        CampoFactura.STATUS
     ];
 
     nombre: string = '';
@@ -112,6 +119,13 @@ export class CampoEditado {
                 }
                 this.valor = valor;
                 break;
+            case CampoFactura.STATUS:
+                const statusValidos = ["PROCESANDO","PENDIENTE_VALIDACION", "PENDIENTE_AUTORIZACION", "RECHAZADA", "APROBADA", "PUBLICADA"];
+                if (!statusValidos.includes(valor)) {
+                    throw new DomainException(`El valor debe ser uno de los siguientes: ${statusValidos.join(", ")}`);
+                }
+                this.valor = valor;
+                break;
         }
 
     }
@@ -152,6 +166,8 @@ export class CampoEditado {
                 return ColumnaFactura.MONTO_TOTAL;
             case CampoFactura.FECHA_VENCIMIENTO:
                 return ColumnaFactura.FECHA_VENCIMIENTO;
+            case CampoFactura.STATUS:
+                return ColumnaFactura.STATUS;
             default:
                 return ColumnaFactura.ID;
         }

@@ -14,15 +14,12 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
   private amqpConn?: Connection;
   private amqpChannel?: Channel;
   private amqpUrl = '';
-
   constructor(
     @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
-    private readonly configService: ConfigService,
   ) { }
 
   async onModuleInit(): Promise<void> {
     await this.connectClientProxy();
-    await this.connectAmqp();
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -46,9 +43,6 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
     this.logger.log(`[START] Publicar Rabbit | exchange=${exchange} | routingKey=${routingKey}`);
 
     try {
-      if (!this.amqpChannel) {
-        await this.connectAmqp();
-      }
       if (!this.amqpChannel) {
         throw new Error('Canal AMQP no disponible');
       }
@@ -99,27 +93,6 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
     } catch (error: unknown) {
       this.connected = false;
       throw new Error(`Error conectando ClientProxy: ${this.formatError(error)}`);
-    }
-  }
-
-  private async connectAmqp(): Promise<void> {
-    const startedAt = Date.now();
-    const host = this.configService.get<string>('rabbitmq.host') || 'rabbitmq';
-    const port = this.configService.get<number>('rabbitmq.port') || 5672;
-    const user = this.configService.get<string>('rabbitmq.user') || 'core';
-    const pass = this.configService.get<string>('rabbitmq.pass') || 'core-123';
-
-    this.amqpUrl = `amqp://${user}:${pass}@${host}:${port}`;
-
-    this.logger.log('[START] Conectando AMQP nativo');
-    try {
-      this.amqpConn = await connect(this.amqpUrl);
-      this.amqpChannel = await this.amqpConn.createChannel();
-      this.logger.log(`[OK] AMQP nativo conectado | durationMs=${Date.now() - startedAt}`);
-    } catch (error: unknown) {
-      this.amqpChannel = undefined;
-      this.amqpConn = undefined;
-      throw new Error(`Error conectando AMQP nativo: ${this.formatError(error)}`);
     }
   }
 

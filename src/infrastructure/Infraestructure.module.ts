@@ -21,6 +21,8 @@ import { STORAGE_SERVICE } from 'src/core/domain/puertos/outbound/IStorageServic
 import { AccessTokenContext } from './adapter/inbound/http-server/middleware/access-token.context';
 import axios, { AxiosHeaders } from 'axios';
 import { StorageServiceAdapter } from './adapter/outbound/external-Service/storageService.adapter';
+import { PermisosRepositoryAdapter } from './adapter/outbound/database/adapters/permisosManagerRepository.adapter';
+import { organizacionRepositoriAdapter } from './adapter/outbound/database/adapters/organizacionRepository.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -88,6 +90,8 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         QueueClientAdapter,
         WorkTeamRepositoryAdapter,
         StorageServiceAdapter,
+        PermisosRepositoryAdapter,
+        organizacionRepositoriAdapter,
         {
             provide: MESSAGE_PUBLISHER,
             useExisting: QueueClientAdapter,
@@ -148,7 +152,10 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         QueueClientAdapter,
         WorkTeamRepositoryAdapter,
         StorageServiceAdapter,
-        STORAGE_SERVICE
+        PermisosRepositoryAdapter,
+        organizacionRepositoriAdapter,
+        STORAGE_SERVICE,
+        ClientsModule
     ],
 })
 export class InfraestructureModule { }

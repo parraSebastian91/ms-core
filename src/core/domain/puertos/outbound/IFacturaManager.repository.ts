@@ -3,6 +3,11 @@ import { FacturaModel } from "../../model/factura.model";
 import { FacturaUpdateModel } from "../../model/facturaUpdate.model";
 
 export interface IFacturaManagerRepository {
+    /**
+     * 
+     * @param factura 
+     * @returns Id del recurso inserrtado en Base de datos
+     */
     publishFactura(factura: FacturaModel): Promise<string>;
     getFacturas(usuario: string, orgUUID: string, isLeader: boolean): Promise<FacturaModel[]>;
     getFacturaByID(facturaID: string): Promise<FacturaModel | null>;

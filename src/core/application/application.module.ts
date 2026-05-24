@@ -11,6 +11,12 @@ import { IMessagePublisher } from '../domain/puertos/inbound/message.publisher.i
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { IWorkTeamRepository } from '../domain/puertos/outbound/IWorkTeam.rerpository';
 import { IStorageService } from '../domain/puertos/outbound/IStorageService.interface';
+import { IFacturaService } from '../domain/puertos/inbound/IFacturaService.interface';
+import { IPermisosManagerService } from '../domain/puertos/inbound/IPermisosManagerService.interface';
+import { IOrganizacionRepository } from '../domain/puertos/outbound/IOrganizacion.repository';
+import { IPermisosManagerRepository } from '../domain/puertos/outbound/IPermisosManager.repository';
+import { FacturaServiceImplement } from './service/factura.service';
+import { PermisosService } from './service/permisos.service';
 
 export type ApplicationModuleOptions = {
     modules: any[];
@@ -20,11 +26,15 @@ export type ApplicationModuleOptions = {
         QueueClientAdapter: Type<IMessagePublisher>;
         WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
         StorageServiceAdapter: Type<IStorageService>;
+        OrganizacionRepository: Type<IOrganizacionRepository>;
+        PermisosManagerRepository: Type<IPermisosManagerRepository>;
     }
 }
 
 export const USER_PROFILE_USE_CASE = 'USER_PROFILE_USE_CASE';
 export const FACTURA_MANAGER_USE_CASE = 'FACTURA_MANAGER_USE_CASE';
+export const PERMISOS_SERVICE = 'PERMISOS_SERVICE';
+export const FACTURA_SERVICE = 'FACTURA_SERVICE';
 
 
 @Module({})
@@ -37,7 +47,9 @@ export class ApplicationModule {
             FacturaManagerRepository,
             QueueClientAdapter,
             WorkTeamRepositoryAdapter,
-            StorageServiceAdapter
+            StorageServiceAdapter,
+            OrganizacionRepository,
+            PermisosManagerRepository
         } = adapters;
 
 
@@ -51,6 +63,30 @@ export class ApplicationModule {
             }
         };
 
+        const PermisosServiceProvider = {
+            provide: PERMISOS_SERVICE,
+            inject: [WorkTeamRepositoryAdapter, PermisosManagerRepository],
+            useFactory: (
+                workTeamRepository: IWorkTeamRepository,
+                permisosManagerRepository: IPermisosManagerRepository
+            ) => {
+                return new PermisosService(workTeamRepository, permisosManagerRepository);
+            }
+        };
+
+
+        const FacturaServiceProvider = {
+            provide: FACTURA_SERVICE,
+            inject: [PERMISOS_SERVICE, OrganizacionRepository, FacturaManagerRepository],
+            useFactory: (
+                permisosManagerService: IPermisosManagerService,
+                organizacionRepository: IOrganizacionRepository,
+                facturaRepository: IFacturaManagerRepository
+            ) => {
+                return new FacturaServiceImplement(permisosManagerService, organizacionRepository, facturaRepository);
+            }
+        };
+
         const FacturaManagerUseCaseProvider = {
             provide: FACTURA_MANAGER_USE_CASE,
             imports: [ConfigModule],
@@ -60,7 +96,8 @@ export class ApplicationModule {
                 QueueClientAdapter,
                 UserProfileRepository,
                 WorkTeamRepositoryAdapter,
-                StorageServiceAdapter
+                StorageServiceAdapter,
+                FACTURA_SERVICE
             ],
             useFactory: (
                 facturaManagerRepository: IFacturaManagerRepository,
@@ -68,7 +105,8 @@ export class ApplicationModule {
                 messagePublisher: IMessagePublisher,
                 userProfileRepository: IUserProfileRepository,
                 workTeamRepository: IWorkTeamRepository,
-                storageServiceAdapter: IStorageService
+                storageServiceAdapter: IStorageService,
+                facturaService: IFacturaService
             ) => {
                 return new FacturaManagerUseCase(
                     facturaManagerRepository,
@@ -76,7 +114,8 @@ export class ApplicationModule {
                     workTeamRepository,
                     messagePublisher,
                     configService,
-                    storageServiceAdapter
+                    storageServiceAdapter,
+                    facturaService
                 );
             }
         };
@@ -84,8 +123,8 @@ export class ApplicationModule {
         return {
             module: ApplicationModule,
             imports: [...modules],
-            providers: [UserProfileUseCaseProvider, FacturaManagerUseCaseProvider],
-            exports: [USER_PROFILE_USE_CASE, FACTURA_MANAGER_USE_CASE]
+            providers: [UserProfileUseCaseProvider, PermisosServiceProvider, FacturaServiceProvider, FacturaManagerUseCaseProvider],
+            exports: [USER_PROFILE_USE_CASE, FACTURA_MANAGER_USE_CASE, PERMISOS_SERVICE, FACTURA_SERVICE]
         }
 
     }

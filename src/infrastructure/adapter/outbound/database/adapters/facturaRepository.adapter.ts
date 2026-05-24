@@ -15,6 +15,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         private readonly dataSource: DataSource
     ) { }
 
+    
     async publishFactura(factura: FacturaModel): Promise<string> {
 
         this.logger.debug(`Publicando factura: ${JSON.stringify(factura)}`);
@@ -178,7 +179,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         from factura.factura fct
         where 
         fct.id = $1
-        and fct.status in ('PENDIENTE_VALIDACION')
+        and fct.status in ('PENDIENTE_VALIDACION','PENDIENTE_AUTORIZACION')
         `;
 
         try {
