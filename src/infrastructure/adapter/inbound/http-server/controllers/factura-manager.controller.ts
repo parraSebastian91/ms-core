@@ -116,4 +116,41 @@ export class FacturaManagerController {
         return response.status(201).json(new ApiResponse(HttpStatus.CREATED, "Factura publicada exitosamente", isPublished));
     }
 
+    @Get('terminos/activo')
+    @Permissions(permisosControlador.VER_FACTURA, permisosControlador.READ_ONLY)
+    async getVersionTerminosActiva(
+        @Req() req: Request,
+        @Res() response: Response
+    ): Promise<any> {
+        const correlationId = req['correlationId'];
+        this.logger.debug(`[START] getVersionTerminosActiva - CorrelationID: ${correlationId}`);
+        const terminos = await this.facturaManager.ExecuteGetVersionTerminosActiva();
+        this.logger.debug(`[END] getVersionTerminosActiva - CorrelationID: ${correlationId}`);
+        return response.status(HttpStatus.OK).json(new ApiResponse(HttpStatus.OK, 'Términos obtenidos', terminos));
+    }
+
+    @Post('autorizacion')
+    @Permissions(permisosControlador.CREAR_FACTURA)
+    async registrarAutorizacion(
+        @Req() req: Request,
+        @Res() response: Response
+    ): Promise<any> {
+        const correlationId = req['correlationId'];
+        const ipAddress = req.ip || req.socket?.remoteAddress || 'unknown';
+        const userAgent = req.headers['user-agent'] || 'unknown';
+        const { facturaId, versionTerminosId, acepto, usuarioUUID } = req.body;
+        this.logger.debug(`[START] registrarAutorizacion - FacturaID: ${facturaId}, UsuarioUUID: ${usuarioUUID}, Acepto: ${acepto}, CorrelationID: ${correlationId}`);
+        await this.facturaManager.ExecuteRegistrarAutorizacion({
+            facturaId,
+            versionTerminosId,
+            acepto,
+            usuarioUUID,
+            ipAddress,
+            userAgent,
+            correlationId,
+        });
+        this.logger.debug(`[END] registrarAutorizacion - FacturaID: ${facturaId}`);
+        return response.status(HttpStatus.CREATED).json(new ApiResponse(HttpStatus.CREATED, 'Autorización registrada', null));
+    }
+
 }

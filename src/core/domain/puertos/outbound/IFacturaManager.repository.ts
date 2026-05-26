@@ -1,6 +1,7 @@
 import { facturaEstado } from "../../model/constantes.model";
 import { FacturaModel } from "../../model/factura.model";
 import { FacturaUpdateModel } from "../../model/facturaUpdate.model";
+import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "../inbound/IFacturaPublisher.interface";
 
 export interface IFacturaManagerRepository {
     /**
@@ -16,4 +17,6 @@ export interface IFacturaManagerRepository {
     facturaExiste(facturaId: string, facturaNumero: string, owner: string): Promise<boolean>;
     updateFacturaState(factura: FacturaModel, status: facturaEstado): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string }>;
     getFacturaKey(facturaID: string[]): Promise<{ id: string, keyUrl: string }[]>;
+    getVersionTerminosActiva(): Promise<VersionTerminosRecord>;
+    registrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void>;
 }

@@ -3,13 +3,14 @@ import { ConfigService } from "@nestjs/config";
 import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, PERMISO_RECURSO, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
-import { IFacturaManager } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
+import { IFacturaManager, AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
 import { IFacturaService } from "src/core/domain/puertos/inbound/IFacturaService.interface";
 import { IMessagePublisher } from "src/core/domain/puertos/inbound/message.publisher.interface";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { IStorageService } from "src/core/domain/puertos/outbound/IStorageService.interface";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { IWorkTeamRepository } from "src/core/domain/puertos/outbound/IWorkTeam.rerpository";
+import { FacturaCreateError } from "src/core/share/errors/FacturaCreate.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 import { FacturaDTO } from "src/infrastructure/adapter/outbound/queue/dto/factura.dto";
 import { MessageDTO, NotificacionDTO } from "src/infrastructure/adapter/outbound/queue/dto/Notificacion.dto";
@@ -233,6 +234,9 @@ export class FacturaManagerUseCase implements IFacturaManager {
             { persistent: true }
         );
 
+        if (mensaje.error) {
+            throw new FacturaCreateError(mensaje.description);
+        }
         return factura;
     }
 
@@ -270,6 +274,29 @@ export class FacturaManagerUseCase implements IFacturaManager {
             return { id: item.id, keyUrl };
         }));
         return presignedUrls || [];
+    }
+
+    async ExecuteGetVersionTerminosActiva(): Promise<VersionTerminosRecord> {
+        this.logger.log('[START] GetVersionTerminosActiva');
+        return this.facturaRepository.getVersionTerminosActiva();
+    }
+
+    async ExecuteRegistrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void> {
+        this.logger.log(`[START] RegistrarAutorizacion | facturaId=${payload.facturaId} | usuarioUUID=${payload.usuarioUUID} | acepto=${payload.acepto}`);
+
+        await this.facturaRepository.registrarAutorizacion(payload);
+        if (payload.acepto) {
+           this.facturaService.GrantAccess_OrganizationByTipoParticipante(
+                PERMISO_RECURSO.FACTURA,
+                TIPO_PARTICIPANTE.FINANCIADORA,
+                payload.facturaId,
+                payload.usuarioUUID,
+                [TIPO_PERMISO.VISTA],
+                `Permisos para la visualización de factura publicada tras aceptación de términos, versiónTerminosId: ${payload.versionTerminosId}`
+            );
+        }
+
+        this.logger.log(`[OK] RegistrarAutorizacion | facturaId=${payload.facturaId}`);
     }
 
 }

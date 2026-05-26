@@ -4,6 +4,7 @@ import { facturaEstado } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
+import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
 import { DataSource } from "typeorm";
 
 export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
@@ -297,6 +298,60 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 error?.stack,
             );
             return null;
+        }
+    }
+
+    async getVersionTerminosActiva(): Promise<VersionTerminosRecord> {
+        const query = `
+            SELECT id, codigo, descripcion, texto_completo, hash_sha256
+            FROM factura.version_terminos
+            WHERE activo = TRUE
+            LIMIT 1
+        `;
+        try {
+            const result = await this.dataSource.query(query);
+            if (!result.length) {
+                throw new Error('No hay versión de términos activa');
+            }
+            return result[0] as VersionTerminosRecord;
+        } catch (error: any) {
+            this.logger.error(`Error al obtener versión de términos activa: ${error?.message ?? error}`, error?.stack);
+            throw error;
+        }
+    }
+
+    async registrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void> {
+        const facturaResult = await this.dataSource.query(
+            `SELECT organizacion_id FROM factura.factura WHERE id = $1`,
+            [payload.facturaId]
+        );
+        if (!facturaResult.length) {
+            throw new Error(`Factura ${payload.facturaId} no encontrada`);
+        }
+        const organizacionId = facturaResult[0].organizacion_id;
+
+        const query = `
+            INSERT INTO factura.autorizacion_publicacion
+                (factura_id, usuario_uuid, organizacion_id, version_terminos_id, acepto, ip_address, user_agent, correlation_id)
+            VALUES ($1, $2, $3, $4, $5, $6::inet, $7, $8)
+        `;
+        try {
+            await this.dataSource.query(query, [
+                payload.facturaId,
+                payload.usuarioUUID,
+                organizacionId,
+                payload.versionTerminosId,
+                payload.acepto,
+                payload.ipAddress,
+                payload.userAgent,
+                payload.correlationId,
+            ]);
+        } catch (error: any) {
+            this.logger.error(
+                `Error al registrar autorización | facturaId=${payload.facturaId} | usuarioUUID=${payload.usuarioUUID}: ${error?.message ?? error}`,
+                error?.stack
+            );
+            throw error;
         }
     }
 

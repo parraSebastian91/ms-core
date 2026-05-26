@@ -16,10 +16,12 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
   private amqpUrl = '';
   constructor(
     @Inject('NOTIFICATION_SERVICE') private readonly client: ClientProxy,
+    private readonly configService: ConfigService,
   ) { }
 
   async onModuleInit(): Promise<void> {
     await this.connectClientProxy();
+    await this.initAmqp();
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -42,11 +44,14 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
     const startedAt = Date.now();
     this.logger.log(`[START] Publicar Rabbit | exchange=${exchange} | routingKey=${routingKey}`);
 
-    try {
-      if (!this.amqpChannel) {
-        throw new Error('Canal AMQP no disponible');
-      }
+    if (!this.amqpChannel) {
+      this.logger.warn(
+        `[WARN] Canal AMQP no disponible — saltando publicación | exchange=${exchange} | routingKey=${routingKey}. El mensaje no fue encolado.`
+      );
+      return;
+    }
 
+    try {
       const exchangeType = options?.exchangeType ?? 'topic';
       await this.amqpChannel.assertExchange(exchange, exchangeType, { durable: true });
 
@@ -93,6 +98,30 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
     } catch (error: unknown) {
       this.connected = false;
       throw new Error(`Error conectando ClientProxy: ${this.formatError(error)}`);
+    }
+  }
+
+  private async initAmqp(): Promise<void> {
+    const startedAt = Date.now();
+    this.logger.log('[START] Conectando AMQP directo');
+    try {
+      const host = this.configService.get<string>('rabbitmq.host') || 'rabbitmq';
+      const port = this.configService.get<number>('rabbitmq.port') || 5672;
+      const user = this.configService.get<string>('rabbitmq.user') || 'core';
+      const pass = this.configService.get<string>('rabbitmq.pass') || 'core-123';
+      this.amqpUrl = `amqp://${user}:${pass}@${host}:${port}`;
+      this.amqpConn = await connect(this.amqpUrl);
+      this.amqpChannel = await this.amqpConn.createChannel();
+      this.amqpConn.on('error', (err) => {
+        this.logger.warn(`[WARN] Conexión AMQP caida | reason=${err.message}`);
+        this.amqpChannel = undefined;
+        this.amqpConn = undefined;
+      });
+      this.logger.log(`[OK] AMQP conectado | durationMs=${Date.now() - startedAt}`);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `[WARN] No se pudo conectar AMQP | durationMs=${Date.now() - startedAt} | reason=${this.formatError(error)}. Las notificaciones de cola estarán deshabilitadas.`
+      );
     }
   }
 
