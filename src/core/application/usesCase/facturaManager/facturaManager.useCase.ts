@@ -194,7 +194,6 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 mensaje = new MessageDTO(EVENT_CODES.FACTURA_DUPLICADA, EVENT_DESCRIPTIONS.FACTURA_DUPLICADA, true);
                 // ultimo caso: La factura no existe, se crea con estado PROCESANDO.
             } else {
-                factura.status = facturaEstado.PUBLICADA;
                 const resultQuery = await this.facturaRepository.publishFactura(factura);
                 if (statusInRequest === facturaEstado.PENDIENTE_AUTORIZACION) {
                     this.logger.warn(`Factura pendiente de autorización, debe autorizar para poder publicar la factura, correlación: ${factura.correlationId}`);
@@ -286,13 +285,19 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
         await this.facturaRepository.registrarAutorizacion(payload);
         if (payload.acepto) {
-           this.facturaService.GrantAccess_OrganizationByTipoParticipante(
+           await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
                 PERMISO_RECURSO.FACTURA,
                 TIPO_PARTICIPANTE.FINANCIADORA,
                 payload.facturaId,
                 payload.usuarioUUID,
                 [TIPO_PERMISO.VISTA],
                 `Permisos para la visualización de factura publicada tras aceptación de términos, versiónTerminosId: ${payload.versionTerminosId}`
+            );
+            const facturaModel = new FacturaModel("", { uuid: payload.usuarioUUID, username: "" }, facturaEstado.PUBLICADA, payload.correlationId)
+            facturaModel.publiInvoiceId = payload.facturaId;    
+            await this.facturaRepository.updateFacturaState(
+                facturaModel,
+                facturaEstado.PUBLICADA
             );
         }
 

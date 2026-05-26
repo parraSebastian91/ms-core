@@ -5,7 +5,7 @@ import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
-import { DataSource } from "typeorm";
+import { DataSource, QueryRunner } from "typeorm";
 
 export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
@@ -16,7 +16,45 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         private readonly dataSource: DataSource
     ) { }
 
-    
+    private readonly uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    private extractUuid(value: unknown): string | null {
+        if (typeof value !== 'string') {
+            return null;
+        }
+        const candidate = value.trim();
+        return this.uuidRegex.test(candidate) ? candidate : null;
+    }
+
+    private async runWithAuditContext<T>(
+        userUuid: string | null,
+        correlationId: string | null,
+        operation: (queryRunner: QueryRunner) => Promise<T>
+    ): Promise<T> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            if (userUuid) {
+                await queryRunner.query(`SELECT set_config('app.user_uuid', $1, true)`, [userUuid]);
+            }
+            if (correlationId) {
+                await queryRunner.query(`SELECT set_config('app.correlation_id', $1, true)`, [correlationId]);
+            }
+
+            const result = await operation(queryRunner);
+            await queryRunner.commitTransaction();
+            return result;
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+
     async publishFactura(factura: FacturaModel): Promise<string> {
 
         this.logger.debug(`Publicando factura: ${JSON.stringify(factura)}`);
@@ -59,7 +97,11 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         }
 
         try {
-            const result = await this.dataSource.query(query, values);
+            const gestorUuid = this.extractUuid(typeof factura.gestor === 'string' ? factura.gestor : factura.gestor?.uuid);
+            const correlationId = this.extractUuid(factura.correlationId);
+            const result = await this.runWithAuditContext(gestorUuid, correlationId, async (queryRunner) => {
+                return queryRunner.query(query, values);
+            });
             const facturaId = result[0].id; // ✅ ID generado
             this.logger.log(`Factura creada con ID: ${facturaId}`);
             return facturaId; // o true + guardar el ID en otro lado
@@ -180,7 +222,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         from factura.factura fct
         where 
         fct.id = $1
-        and fct.status in ('PENDIENTE_VALIDACION','PENDIENTE_AUTORIZACION')
+        and fct.status in ('PENDIENTE_VALIDACION','PENDIENTE_AUTORIZACION','RECHAZADA')
         `;
 
         try {
@@ -199,20 +241,36 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
     async updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null> {
         const isDate = factura.campoEditado.nombre.includes("fecha");
+        const valorParametrizado = isDate
+            ? new Date(factura.campoEditado.valor).toISOString()
+            : factura.campoEditado.valor;
         const query = `
         UPDATE 
             factura.factura 
         SET 
-            ${factura.campoEditado.nombreColumna}=${isDate ? `'${new Date(factura.campoEditado.valor).toISOString()}'` : factura.campoEditado.valor}
-        WHERE id=$1 and status='PENDIENTE_VALIDACION' and gestor_usuario_uuid=$2 and organizacion_id=$3
+            ${factura.campoEditado.nombreColumna}=$4
+        WHERE id=$1 and gestor_usuario_uuid=$2 and organizacion_id=$3
         RETURNING id
         `;
         try {
-            const result = await this.dataSource.query(query, [factura.id, factura.gestor, factura.ownerUUID]);
+            const gestorUuid = this.extractUuid(factura.gestor);
+            const result = await this.runWithAuditContext(gestorUuid, null, async (queryRunner) => {
+                const correlationRows = await queryRunner.query(
+                    `SELECT correlation_id FROM factura.factura WHERE id = $1 LIMIT 1`,
+                    [factura.id]
+                );
+
+                const correlationId = this.extractUuid(correlationRows?.[0]?.correlation_id);
+                if (correlationId) {
+                    await queryRunner.query(`SELECT set_config('app.correlation_id', $1, true)`, [correlationId]);
+                }
+
+                return queryRunner.query(query, [factura.id, factura.gestor, factura.ownerUUID, valorParametrizado]);
+            });
             if (result.length > 0) {
                 return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: true, mensaje: "Factura actualizada exitosamente" };
             } else {
-                this.logger.warn(`No se pudo actualizar la factura, verifica que el ID sea correcto y que la factura esté en estado PENDIENTE_VALIDACION, facturaID: ${factura.id}`);
+                this.logger.warn(`No se pudo actualizar la factura, verifica que el ID sea correcto, facturaID: ${factura.id}`);
                 return { id: factura.id, valor: factura.campoEditado.valor, isUpdate: false, mensaje: "No se pudo actualizar la factura, verifica que el ID sea correcto y que la factura esté en estado PENDIENTE_VALIDACION" };
             }
         } catch (error: any) {
@@ -254,12 +312,18 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         UPDATE 
             factura.factura 
         SET 
-            status=$3
-        WHERE id=$1 and organizacion_id=$2
+            status=$2
+        WHERE id=$1 
+         ${factura.ownerUUID ? 'AND organizacion_id=$3' : ''}
         RETURNING id
         `;
+        const params = factura.ownerUUID ? [factura.publiInvoiceId, String(status), factura.ownerUUID] : [factura.publiInvoiceId, String(status)];
         try {
-            const result = await this.dataSource.query(query, [factura.publiInvoiceId, factura.ownerUUID, status]);
+            const gestorUuid = this.extractUuid(typeof factura.gestor === 'string' ? factura.gestor : factura.gestor?.uuid);
+            const correlationId = this.extractUuid(factura.correlationId);
+            const result = await this.runWithAuditContext(gestorUuid, correlationId, async (queryRunner) => {
+                return queryRunner.query(query, params);
+            });
             if (result.length > 0) {
                 return { id: factura.publiInvoiceId, valor: status, isUpdate: true, mensaje: "Estado de la factura actualizado exitosamente" };
             } else {

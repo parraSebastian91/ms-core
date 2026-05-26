@@ -22,7 +22,7 @@ export class PermisosRepositoryAdapter implements IPermisosManagerRepository {
             $6::TEXT
         );`;
        try {
-        const result = await this.dataSource.query(query, [tipoRecurso, resourceId, userGrante, organizacionID, permissions.join(","), razon_descripcion]);
+        const result = await this.dataSource.query(query, [tipoRecurso, resourceId, organizacionID, userGrante, permissions.join(","), razon_descripcion]);
         this.logger.debug(`GrantAccess_Organization result: ${JSON.stringify(result)}`);
         return result[0].grant_access_to_organization_groups;
        } catch (error) {
