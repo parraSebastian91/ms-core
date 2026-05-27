@@ -24,6 +24,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
         const query = `select 
                         u.userName as username,
+                        u.usuario_uuid,
                         u.created_at as "ingreso",
                         u.activo,
                         c.nombres,

@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, PERMISO_RECURSO, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
+import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, RESOURCE_TYPE, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManager, AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
@@ -181,7 +181,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 if (statusInRequest === facturaEstado.PROCESANDO && resultQuery.isUpdate) {
                     this.logger.log(`Factura publicada exitosamente para correlación: ${factura.correlationId}`);
                     resultadoCreacionPermisos = await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
-                        PERMISO_RECURSO.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, factura.publiInvoiceId, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
+                        RESOURCE_TYPE.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, factura.publiInvoiceId, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_PUBLICADA, EVENT_DESCRIPTIONS.FACTURA_PUBLICADA + ` Financieras Notificadas: ${resultadoCreacionPermisos}`, false, true);
                 }
                 // Segundo If: La factura existe y se intenta publicar nuevamente, se notifica factura duplicada.
@@ -196,7 +196,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
                     mensaje = new MessageDTO(EVENT_CODES.FACTURA_PENDIENTE_AUTORIZACION, EVENT_DESCRIPTIONS.FACTURA_PENDIENTE_AUTORIZACION, true);
                 } else {
                     resultadoCreacionPermisos = await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
-                        PERMISO_RECURSO.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, resultQuery, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
+                        RESOURCE_TYPE.FACTURA, TIPO_PARTICIPANTE.FINANCIADORA, resultQuery, factura.gestor.uuid, [TIPO_PERMISO.VISTA], "Permisos para la visualización de factura publicada");
                 }
 
                 if (resultQuery.includes("error")) {
@@ -282,7 +282,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
         await this.facturaRepository.registrarAutorizacion(payload);
         if (payload.acepto) {
             await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
-                PERMISO_RECURSO.FACTURA,
+                RESOURCE_TYPE.FACTURA,
                 TIPO_PARTICIPANTE.FINANCIADORA,
                 payload.facturaId,
                 payload.usuarioUUID,
@@ -300,9 +300,14 @@ export class FacturaManagerUseCase implements IFacturaManager {
         this.logger.log(`[OK] RegistrarAutorizacion | facturaId=${payload.facturaId}`);
     }
 
-    async ExecuteCargaDocumentoRespaldo(factura: FacturaModel): Promise<boolean> {
+    async ExecuteCargaDocumentoRespaldo(factura: FacturaModel, categoryProcess: string, resourceType: RESOURCE_TYPE, status: EVENT_CODES): Promise<boolean> {
         console.log(factura);
-        
+        let mensaje: MessageDTO;
+        if (status === EVENT_CODES.READY) {
+            const compararDatosOCR = await this.facturaService.compararDatosOCRConFactura(factura);
+        } else {
+            mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
+        }
         return true;
     }
 

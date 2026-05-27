@@ -118,86 +118,12 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
     async getFacturas(usuario: string, orgUUID: string, isLeader: boolean): Promise<FacturaModel[]> {
         this.logger.debug(`Obteniendo facturas para usuario: ${usuario}, organización: ${orgUUID}`);
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
-        const params: any[] = [];
         const todasLasOrgs = orgUUID === 'Todas';
+        let params: any[] = [usuario, todasLasOrgs ? null : orgUUID];
 
         // Base
-        let query = `
-        SELECT
-            fct.id              AS uuid,
-            fct.organizacion_id AS organizacion_uuid,
-            org.razon_social    AS nombre_mandante,
-            org.rut             AS rut_mandante,
-            fct.asset_id,
-            usr.userName AS gestor,
-            fct.gestor_usuario_uuid  AS gestor_uuid, 
-            fct.deudor_nombre,
-            fct.deudor_rut,
-            fct.factura_numero,
-            fct.monto_total,
-            fct.fecha_vencimiento,
-            fct.status,
-            fct.correlation_id,
-            fct.created_at,
-            COUNT(ofer.factura_id)  AS ofertas,
-            fct.status
-        FROM factura.factura fct
-        JOIN core.usuario usr
-            ON usr.usuario_uuid = fct.gestor_usuario_uuid
-        JOIN core.organizacion org
-            ON org.organizacion_uuid = fct.organizacion_id
-        LEFT JOIN factura.ofertas ofer       -- LEFT para incluir facturas sin ofertas
-            ON ofer.factura_id = fct.id
-        WHERE 1=1
-    `;
-
-        // Filtro por org
-        if (!todasLasOrgs) {
-            params.push(orgUUID);
-            query += ` AND fct.organizacion_id = $${params.length}`;
-        }
-
-        // Filtro por rol
-        if (isLeader) {
-            params.push(usuario);
-            query += `
-            AND EXISTS (
-                SELECT 1
-                FROM core.usuario u
-                JOIN core.grupo_trabajo gt
-                    ON gt.lider_usuario_uuid = u.usuario_uuid
-                WHERE 
-                    ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $${params.length}
-                    AND u.activo           = true
-                    AND gt.activo          = true
-                    AND gt.organizacion_id = fct.organizacion_id
-            )
-        `;
-        } else {
-            params.push(usuario);
-            query += ` AND fct.gestor_usuario_uuid = $${params.length}`;
-        }
-
-        query += `
-        GROUP BY
-            fct.id,
-            fct.organizacion_id,
-            org.razon_social,            
-            usr.userName,
-            org.rut,
-            fct.asset_id,
-            fct.gestor_usuario_uuid,
-            fct.deudor_nombre,
-            fct.deudor_rut,
-            fct.factura_numero,
-            fct.monto_total,
-            fct.fecha_vencimiento,
-            fct.status,
-            fct.correlation_id,
-            fct.created_at
-        ORDER BY fct.created_at DESC;
-        `;
-
+        const query = `
+        SELECT * FROM permisos.obtener_facturas_accesibles($1,$2)`;
         try {
             const result = await this.dataSource.query(query, params);
             this.logger.debug(`Facturas obtenidas: ${JSON.stringify(result)}`);
@@ -226,9 +152,9 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         `;
 
         try {
-            const result = await this.dataSource.query(query, [facturaID]);
-            console.log("Resultado de validación de factura editable:", result);
-            return result[0]?.is_editable || false;
+            // const result = await this.dataSource.query(query, [facturaID]);            
+            // return result[0]?.is_editable || false;
+            return true; // Temporalmente devolvemos true para permitir la edición, reemplaza esto con la lógica real una vez que implementes la consulta
         } catch (error: any) {
             this.logger.error(
                 `Error al validar si la factura es editable: ${error?.message ?? error}`,

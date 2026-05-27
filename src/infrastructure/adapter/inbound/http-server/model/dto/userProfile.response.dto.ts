@@ -2,6 +2,7 @@ import { UserProfileModel } from "src/core/domain/model/userProfile.model";
 
 
 export class UserProfileDTO {
+    usuario_uuid: string;
     username: string;
     ingreso: Date;
     activo: boolean;
@@ -21,6 +22,7 @@ export class UserProfileDTO {
 
     static builder(userProfile: UserProfileModel): UserProfileDTO {
         const userProfileDTO = new UserProfileDTO();
+        userProfileDTO.usuario_uuid = userProfile.usuario_uuid;
         userProfileDTO.username = userProfile.username;
         userProfileDTO.ingreso = userProfile.ingreso;
         userProfileDTO.activo = userProfile.activo;

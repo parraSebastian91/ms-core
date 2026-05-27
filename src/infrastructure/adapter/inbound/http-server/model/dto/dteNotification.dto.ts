@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import { IsArray, IsNotEmpty, IsString, IsUUID, ValidateNested } from "class-validator"
-import { facturaEstado } from "src/core/domain/model/constantes.model"
+import { facturaEstado, RESOURCE_TYPE } from "src/core/domain/model/constantes.model"
 import { FacturaModel } from "src/core/domain/model/factura.model"
 
 
@@ -24,6 +24,14 @@ export class NotifyPayload {
 
 
 export class NotifyModel {
+
+    @IsString()
+    @IsNotEmpty()
+    resource_type: RESOURCE_TYPE;
+
+    @IsString()
+    resource_id: string;
+
     @IsString()
     @IsNotEmpty()
     category: string;
@@ -54,7 +62,8 @@ export class NotifyModel {
     asset_id: string;
 
     static toModel(data: NotifyModel): FacturaModel {
-        const factura = new FacturaModel(data.ownerUUID, { username: data.gestor, uuid: data.gestor }, facturaEstado.PENDIENTE_VALIDACION, data.correlationId);
+        const factura = new FacturaModel(data.ownerUUID, { username: data.gestor, uuid: data.gestor }, facturaEstado.PROCESANDO, data.correlationId);
+        factura.publiInvoiceId = data.resource_id;
         factura.facturaNumero = data.payload.numeroFactura.join(";");
         factura.deudorRut = data.payload.rutDeudor.join(";");
         factura.deudorNombre = data.payload.nombreDeudor.join(";");

@@ -10,5 +10,7 @@ export interface IFacturaService {
         razon_descripcion: string
     ): Promise<number>;
 
+     compararDatosOCRConFactura(factura: FacturaModel): Promise<boolean>;
+
     // PublicarFactura(factura: FacturaModel): Promise<{ success: boolean; message: string }>;
 }

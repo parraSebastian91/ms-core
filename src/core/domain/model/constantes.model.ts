@@ -4,12 +4,17 @@ export enum CATEGORY_PROCESS {
     DTE_FACTURA_RESPALDO = "DTE-factura-respaldo",
 }
 
+export enum EVENT_CODES {
+    READY = "READY",
+    ERROR = "ERROR"
+}
+
 
 export enum TIPO_PERMISO {
     VISTA = "VIEW",
 }
 
-export enum PERMISO_RECURSO {
+export enum RESOURCE_TYPE {
     FACTURA = "FACTURA",
 }
 
@@ -35,6 +40,8 @@ export enum EVENT_CODES {
     FACTURA_VACIA_PUBLICADA = "FACTURA_VACIA_PUBLICADA",
     FACTURA_DUPLICADA = "FACTURA_DUPLICADA",
     FACTURA_PROCESADA = "FACTURA_PROCESADA",
+    FACTURA_RECHAZADA = "FACTURA_RECHAZADA",
+    FACTURA_RESPALDO_ACTUALIZADO = "FACTURA_RESPALDO_ACTUALIZADO",
     FACTURA_ERROR_PROCESAMIENTO = "FACTURA_ERROR_PROCESAMIENTO",
     FACTURA_ERROR_VALIDACION = "FACTURA_ERROR_VALIDACION",
 }
@@ -45,6 +52,8 @@ export enum EVENT_DESCRIPTIONS {
     FACTURA_VACIA_PUBLICADA = "Factura vacía publicada exitosamente",
     FACTURA_DUPLICADA = "Factura duplicada, ya existe una factura con el mismo emisor y folio",
     FACTURA_PROCESADA = "Factura procesada exitosamente",
+    FACTURA_RECHAZADA = "Factura rechazada",
+    FACTURA_RESPALDO_ACTUALIZADO = "Factura de respaldo actualizada exitosamente",
     FACTURA_ERROR_PROCESAMIENTO = "Error al procesar la factura",
     FACTURA_ERROR_VALIDACION = "Error de validación de la factura, Usuario u organización no válidos",
     FACTURA_PUBLICADA_PENDIENTE_VALIDACION = "Factura publicada exitosamente, pendiente de validación",

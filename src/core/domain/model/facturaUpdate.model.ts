@@ -7,7 +7,8 @@ export enum CampoFactura {
     NOMBRE_RAZON_SOCIAL_DEUDOR = "nombreRazonSocialDeudor",
     MONTO_TOTAL = "montoTotal",
     FECHA_VENCIMIENTO = "fechaVencimiento",
-    STATUS = "status"
+    STATUS = "status",
+    ASSET_ID = "asset_id"
 }
 
 export enum ColumnaFactura {
@@ -17,7 +18,8 @@ export enum ColumnaFactura {
     NOMBRE_RAZON_SOCIAL_DEUDOR = "deudor_nombre",
     MONTO_TOTAL = "monto_total",
     FECHA_VENCIMIENTO = "fecha_vencimiento",
-    STATUS = "status"
+    STATUS = "status",
+    ASSET_ID = "asset_id"
 }
 
 export class FacturaUpdateModel {
@@ -47,7 +49,8 @@ export class CampoEditado {
         CampoFactura.NOMBRE_RAZON_SOCIAL_DEUDOR,
         CampoFactura.MONTO_TOTAL,
         CampoFactura.FECHA_VENCIMIENTO,
-        CampoFactura.STATUS
+        CampoFactura.STATUS,
+        CampoFactura.ASSET_ID
     ];
 
     nombre: string = '';
@@ -64,7 +67,7 @@ export class CampoEditado {
             this.nombreColumna = this.mapearNombreColumna(nombre);
             this.nombre = nombre;
         } else {
-            throw new DomainException("El nombre del campo es inválido");
+            throw new DomainException(`El nombre del campo es inválido | ${nombre}`);
         }
     }
 
@@ -126,6 +129,12 @@ export class CampoEditado {
                 }
                 this.valor = valor;
                 break;
+            case CampoFactura.ASSET_ID:
+                if (valor.length === 0) {
+                    throw new DomainException("El valor no puede estar vacío para el campo ASSET_ID");
+                }
+                this.valor = valor;
+                break;
         }
 
     }
@@ -168,6 +177,8 @@ export class CampoEditado {
                 return ColumnaFactura.FECHA_VENCIMIENTO;
             case CampoFactura.STATUS:
                 return ColumnaFactura.STATUS;
+            case CampoFactura.ASSET_ID:
+                return ColumnaFactura.ASSET_ID;
             default:
                 return ColumnaFactura.ID;
         }

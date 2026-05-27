@@ -1,15 +1,46 @@
 import { facturaEstado } from "./constantes.model";
 
+export class Row {
+    factura_id: string;
+    cedente_org_id: string;
+    cedente_razon_social: string;
+    cedente_rut: string;
+    deudor_nombre: string;
+    deudor_rut: string;
+    factura_numero: string;
+    monto_total: string;
+    fecha_vencimiento: Date;
+    factura_status: facturaEstado;
+    created_at: Date;
+    updated_at: Date;
+    total_ofertas: number;
+    ofertas_enviadas: number;
+    ofertas_revisadas: number;
+    ofertas_aceptadas: number;
+    ofertas_rechazadas: number;
+    mejor_tasa: number;
+    mejor_monto_oferta: number;
+    ultima_actualizacion_oferta: Date;
+    esta_ofertada: boolean;
+    tiene_permiso: boolean;
+    org_contexto_uuid: string;
+    url_factura: string | null;
+    gestor_uuid: string;
+    gestor_username: string;
+    correlation_id: string;
+    asset_id: string;
+}
+
 export class FacturaModel {
     publiInvoiceId: string;
     assetId: string;
-    ownerUUID: string;
+    ownerUUID: string; // cedente_org_id
     gestor: {
         uuid: string;
         username: string;
     };
-    nombre_mandante: string;
-    rut_mandante: string;
+    nombre_cliente_cedente: string; // deudor_nombre
+    rut_cliente_cedente: string; // deudor_rut
     deudorNombre: string;
     deudorRut: string;
     facturaNumero: string;
@@ -17,13 +48,18 @@ export class FacturaModel {
     fechaVencimiento: Date;
     status: facturaEstado;
     correlationId: string;
-    ofertas: number;
+    total_ofertas: number;
+    ofertas_enviadas: number;
+    ofertas_revisadas: number;
+    ofertas_aceptadas: number;
+    ofertas_rechazadas: number;
+    url_factura: string | null;
     constructor(ownerUUID: string, gestor: { uuid: string, username: string }, status: facturaEstado, correlationId: string) {
         this.assetId = "";
         this.ownerUUID = ownerUUID;
         this.gestor = gestor;
-        this.nombre_mandante = "";
-        this.rut_mandante = "";
+        this.nombre_cliente_cedente = "";
+        this.rut_cliente_cedente = "";
         this.deudorNombre = "";
         this.deudorRut = "";
         this.facturaNumero = "";
@@ -31,29 +67,39 @@ export class FacturaModel {
         this.fechaVencimiento = new Date();
         this.status = status;
         this.correlationId = correlationId;
-        this.ofertas = 0;
+        this.total_ofertas = 0;
+        this.ofertas_enviadas = 0;
+        this.ofertas_revisadas = 0;
+        this.ofertas_aceptadas = 0;
+        this.ofertas_rechazadas = 0;
+        this.url_factura = null;
     }
 
-    static fromEntity(entity: any): FacturaModel {
+    static fromEntity(entity: Row): FacturaModel {
         const factura = new FacturaModel(
-            entity.organizacion_uuid,
+            entity.cedente_org_id,
             {
                 uuid: entity.gestor_uuid,
-                username: entity.gestor
+                username: entity.gestor_username
             },
-            entity.status,
+            entity.factura_status as facturaEstado,
             entity.correlation_id
         );
-        factura.publiInvoiceId = entity.uuid;
-        factura.assetId = entity.asset_id;
+        factura.publiInvoiceId = entity.factura_id;
+        factura.assetId = entity.asset_id || "";
         factura.deudorNombre = entity.deudor_nombre;
-        factura.rut_mandante = entity.rut_mandante;
-        factura.nombre_mandante = entity.nombre_mandante;
+        factura.rut_cliente_cedente = entity.cedente_rut;
+        factura.nombre_cliente_cedente = entity.cedente_razon_social;
         factura.deudorRut = entity.deudor_rut;
         factura.facturaNumero = entity.factura_numero;
-        factura.montoTotal = entity.monto_total;
+        factura.montoTotal = Number(entity.monto_total.replace(/\./g, '')); // Eliminar puntos antes de convertir a número
         factura.fechaVencimiento = new Date(entity.fecha_vencimiento);
-        factura.ofertas = entity.ofertas || 0;
+        factura.total_ofertas = entity.total_ofertas || 0;
+        factura.ofertas_enviadas = entity.ofertas_enviadas || 0;
+        factura.ofertas_revisadas = entity.ofertas_revisadas || 0;
+        factura.ofertas_aceptadas = entity.ofertas_aceptadas || 0;
+        factura.ofertas_rechazadas = entity.ofertas_rechazadas || 0;
+        factura.url_factura = entity.url_factura;
         return factura;
     }
 

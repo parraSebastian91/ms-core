@@ -1,5 +1,6 @@
 export class UserProfileModel {
-    username: string;
+    usuario_uuid: string;
+    username: string;    
     ingreso: Date;
     activo: boolean;
     nombres: string;
@@ -35,6 +36,7 @@ export class UserProfileModel {
     static fromData(row: any): UserProfileModel {   
         console.log("Mapping data to UserProfileModel:", row); // Debug log to check the input data      
         const userProfile = new UserProfileModel();
+        userProfile.usuario_uuid = row.usuario_uuid;
         userProfile.username = row.username;
         userProfile.ingreso = row.ingreso;
         userProfile.activo = row.activo;

@@ -29,12 +29,9 @@ export class FacturaServiceImplement implements IFacturaService {
         return organizacionesAfectadas;
     }
 
-    // async PublicarFactura(factura: FacturaModel): Promise<{ success: boolean; message: string }> {
-
-
-
-
-    //     return { success: true, message: "Factura publicada exitosamente" };
-    // }
+    async compararDatosOCRConFactura(factura: FacturaModel): Promise<boolean> {
+        // Lógica para comparar los datos OCR con la factura
+        return true;
+    }
 
 }
