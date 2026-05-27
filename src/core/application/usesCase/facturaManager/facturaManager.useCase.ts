@@ -30,21 +30,17 @@ export class FacturaManagerUseCase implements IFacturaManager {
     ) { }
 
     async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
-        this.logger.log(`Ejecutando publicación de factura, correlación: ${factura.correlationId}`);
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const gestorUsername = typeof factura.gestor === "string" ? factura.gestor : factura.gestor.username;;
 
-        const gestorUsername = typeof factura.gestor === "string" ? factura.gestor : factura.gestor.username;
         const validateUserAndOrganizacion = await this.userProfileRepository.getUserProfileByUsername(gestorUsername, factura.ownerUUID);
 
         const header: Record<string, unknown> = {
             correlationId: factura.correlationId,
         };
-
-        if (factura.gestor && typeof factura.gestor === "string" && !isUUID.test(factura.gestor) && validateUserAndOrganizacion.isValid) {
-            factura.gestor = {
-                uuid: validateUserAndOrganizacion.profile.usuario_uuid,
-                username: gestorUsername
-            }
+        factura.gestor = {
+            uuid: validateUserAndOrganizacion.profile.usuario_uuid,
+            username: validateUserAndOrganizacion.profile.userName
         }
 
         const publishNotification = (
@@ -79,7 +75,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
             );
             return false;
         }
-
+        console.log(factura);
         const resultQuery = await this.facturaRepository.publishFactura(factura);
         if (resultQuery.includes("unique_factura_emisor_folio")) {
             this.logger.warn(`Factura duplicada detectada para correlación: ${factura.correlationId}`);
@@ -285,7 +281,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
         await this.facturaRepository.registrarAutorizacion(payload);
         if (payload.acepto) {
-           await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
+            await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
                 PERMISO_RECURSO.FACTURA,
                 TIPO_PARTICIPANTE.FINANCIADORA,
                 payload.facturaId,
@@ -294,7 +290,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 `Permisos para la visualización de factura publicada tras aceptación de términos, versiónTerminosId: ${payload.versionTerminosId}`
             );
             const facturaModel = new FacturaModel("", { uuid: payload.usuarioUUID, username: "" }, facturaEstado.PUBLICADA, payload.correlationId)
-            facturaModel.publiInvoiceId = payload.facturaId;    
+            facturaModel.publiInvoiceId = payload.facturaId;
             await this.facturaRepository.updateFacturaState(
                 facturaModel,
                 facturaEstado.PUBLICADA
@@ -302,6 +298,12 @@ export class FacturaManagerUseCase implements IFacturaManager {
         }
 
         this.logger.log(`[OK] RegistrarAutorizacion | facturaId=${payload.facturaId}`);
+    }
+
+    async ExecuteCargaDocumentoRespaldo(factura: FacturaModel): Promise<boolean> {
+        console.log(factura);
+        
+        return true;
     }
 
 }

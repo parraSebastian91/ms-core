@@ -1,6 +1,7 @@
 
 export enum CATEGORY_PROCESS {
     DTE_FACTURA = "DTE-factura",
+    DTE_FACTURA_RESPALDO = "DTE-factura-respaldo",
 }
 
 

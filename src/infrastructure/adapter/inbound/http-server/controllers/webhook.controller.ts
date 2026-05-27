@@ -28,10 +28,19 @@ export class WebhookController {
         @Res() response: Response
     ) {
         this.logger.log(`Webhook received with correrlationId: ${payload.correlationId}, category: ${payload.category}, gestor: ${payload.gestor}   `);
-
+        let result: any;
+        console.log("Payload recibido:", payload);
         switch (payload.category) {
             case CATEGORY_PROCESS.DTE_FACTURA:
-                const result = await this.facturaManager.ExecutePublishFactura(NotifyModel.toModel(payload));
+                result = await this.facturaManager.ExecutePublishFactura(NotifyModel.toModel(payload));
+                if (result) {
+                    this.logger.log(`Factura procesada exitosamente para correlación: ${payload.correlationId}`);
+                } else {
+                    this.logger.error(`Error al procesar la factura para correlación: ${payload.correlationId}`);
+                }
+                break;
+            case CATEGORY_PROCESS.DTE_FACTURA_RESPALDO:
+                result = await this.facturaManager.ExecuteCargaDocumentoRespaldo(NotifyModel.toModel(payload));
                 if (result) {
                     this.logger.log(`Factura procesada exitosamente para correlación: ${payload.correlationId}`);
                 } else {
