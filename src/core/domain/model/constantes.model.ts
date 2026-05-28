@@ -10,6 +10,13 @@ export enum EVENT_CODES {
 }
 
 
+export enum createdBy{
+    FORM = "FORM",
+    OCR = "OCR",
+    AGENT = "AGENT"
+}
+
+
 export enum TIPO_PERMISO {
     VISTA = "VIEW",
 }
@@ -44,6 +51,8 @@ export enum EVENT_CODES {
     FACTURA_RESPALDO_ACTUALIZADO = "FACTURA_RESPALDO_ACTUALIZADO",
     FACTURA_ERROR_PROCESAMIENTO = "FACTURA_ERROR_PROCESAMIENTO",
     FACTURA_ERROR_VALIDACION = "FACTURA_ERROR_VALIDACION",
+    FACTURA_CON_DISCREPANCIAS_OCR = "FACTURA_CON_DISCREPANCIAS_OCR",
+    FACTURA_RESPALDO_SIN_DISCREPANCIAS = "FACTURA_RESPALDO_SIN_DISCREPANCIAS",
 }
 
 export enum EVENT_DESCRIPTIONS {
@@ -57,6 +66,8 @@ export enum EVENT_DESCRIPTIONS {
     FACTURA_ERROR_PROCESAMIENTO = "Error al procesar la factura",
     FACTURA_ERROR_VALIDACION = "Error de validación de la factura, Usuario u organización no válidos",
     FACTURA_PUBLICADA_PENDIENTE_VALIDACION = "Factura publicada exitosamente, pendiente de validación",
+    FACTURA_CON_DISCREPANCIAS_OCR = "El documento de respaldo presenta diferencias con los datos declarados. Por favor revise las notas.",
+    FACTURA_RESPALDO_SIN_DISCREPANCIAS = "El documento de respaldo fue verificado por OCR y coincide con los datos declarados.",
 }
 
 export enum ROLE_PERMISSION_CODES {

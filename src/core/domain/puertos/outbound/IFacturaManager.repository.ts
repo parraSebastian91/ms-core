@@ -1,5 +1,5 @@
 import { facturaEstado } from "../../model/constantes.model";
-import { FacturaModel } from "../../model/factura.model";
+import { FacturaModel, NotaOCR } from "../../model/factura.model";
 import { FacturaUpdateModel } from "../../model/facturaUpdate.model";
 import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "../inbound/IFacturaPublisher.interface";
 
@@ -19,4 +19,5 @@ export interface IFacturaManagerRepository {
     getFacturaKey(facturaID: string[]): Promise<{ id: string, keyUrl: string }[]>;
     getVersionTerminosActiva(): Promise<VersionTerminosRecord>;
     registrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void>;
+    guardarNotasOCR(facturaId: string, notas: NotaOCR[]): Promise<void>;
 }

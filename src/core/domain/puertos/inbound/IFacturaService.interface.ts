@@ -1,4 +1,4 @@
-import { FacturaModel } from "../../model/factura.model";
+import { FacturaModel, NotaOCR } from "../../model/factura.model";
 
 export interface IFacturaService {
     GrantAccess_OrganizationByTipoParticipante(
@@ -10,7 +10,7 @@ export interface IFacturaService {
         razon_descripcion: string
     ): Promise<number>;
 
-     compararDatosOCRConFactura(factura: FacturaModel): Promise<boolean>;
+    compararDatosOCRConFactura(facturaOCR: FacturaModel, facturaAlmacenada: FacturaModel): Promise<NotaOCR[]>;
 
     // PublicarFactura(factura: FacturaModel): Promise<{ success: boolean; message: string }>;
 }

@@ -1,4 +1,4 @@
-import { FacturaModel } from "src/core/domain/model/factura.model";
+import { FacturaModel, NotaOCR } from "src/core/domain/model/factura.model";
 import { IFacturaService } from "src/core/domain/puertos/inbound/IFacturaService.interface";
 import { IPermisosManagerService } from "src/core/domain/puertos/inbound/IPermisosManagerService.interface";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
@@ -29,9 +29,44 @@ export class FacturaServiceImplement implements IFacturaService {
         return organizacionesAfectadas;
     }
 
-    async compararDatosOCRConFactura(factura: FacturaModel): Promise<boolean> {
-        // Lógica para comparar los datos OCR con la factura
-        return true;
+    async compararDatosOCRConFactura(facturaOCR: FacturaModel, facturaAlmacenada: FacturaModel): Promise<NotaOCR[]> {
+        const notas: NotaOCR[] = [];
+
+        const comparaciones: Array<{ campo: string; declarado: string; ocr: string }> = [
+            {
+                campo: 'deudor_rut',
+                declarado: (facturaAlmacenada.deudorRut ?? '').trim().toUpperCase(),
+                ocr: (facturaOCR.deudorRut ?? '').trim().toUpperCase(),
+            },
+            {
+                campo: 'deudor_nombre',
+                declarado: (facturaAlmacenada.deudorNombre ?? '').trim().toUpperCase(),
+                ocr: (facturaOCR.deudorNombre ?? '').trim().toUpperCase(),
+            },
+            {
+                campo: 'factura_numero',
+                declarado: (facturaAlmacenada.facturaNumero ?? '').trim(),
+                ocr: (facturaOCR.facturaNumero ?? '').trim(),
+            },
+            {
+                campo: 'monto_total',
+                declarado: String(facturaAlmacenada.montoTotal ?? '').trim(),
+                ocr: String(facturaOCR.montoTotal ?? '').trim(),
+            },
+        ];
+
+        for (const { campo, declarado, ocr } of comparaciones) {
+            if (ocr && declarado !== ocr) {
+                notas.push({
+                    campo,
+                    valor_declarado: declarado,
+                    valor_ocr: ocr,
+                    nota: `Campo "${campo}": el formulario indica "${declarado}" pero el OCR detectó "${ocr}".`,
+                });
+            }
+        }
+
+        return notas;
     }
 
 }

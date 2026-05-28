@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { CATEGORY_PROCESS, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, RESOURCE_TYPE, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
+import { CATEGORY_PROCESS, createdBy, EVENT_CODES, EVENT_DESCRIPTIONS, facturaEstado, RESOURCE_TYPE, TIPO_PARTICIPANTE, TIPO_PERMISO } from "src/core/domain/model/constantes.model";
 import { FacturaModel } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManager, AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
@@ -75,7 +75,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
             );
             return false;
         }
-        console.log(factura);
+        factura.createdBy = createdBy.OCR;
+        factura.status = factura.status === facturaEstado.PROCESANDO ? facturaEstado.PENDIENTE_AUTORIZACION : factura.status;
         const resultQuery = await this.facturaRepository.publishFactura(factura);
         if (resultQuery.includes("unique_factura_emisor_folio")) {
             this.logger.warn(`Factura duplicada detectada para correlación: ${factura.correlationId}`);
@@ -280,6 +281,9 @@ export class FacturaManagerUseCase implements IFacturaManager {
         this.logger.log(`[START] RegistrarAutorizacion | facturaId=${payload.facturaId} | usuarioUUID=${payload.usuarioUUID} | acepto=${payload.acepto}`);
 
         await this.facturaRepository.registrarAutorizacion(payload);
+
+        //TODO: Antes de publicar se debe vavlidar las notas adjuntas a la factura.
+        //TODO: se debe agregar al facturaType la bandera de autorizacion de publicacion. parra evitar preguntar de nuevo.
         if (payload.acepto) {
             await this.facturaService.GrantAccess_OrganizationByTipoParticipante(
                 RESOURCE_TYPE.FACTURA,
@@ -301,13 +305,58 @@ export class FacturaManagerUseCase implements IFacturaManager {
     }
 
     async ExecuteCargaDocumentoRespaldo(factura: FacturaModel, categoryProcess: string, resourceType: RESOURCE_TYPE, status: EVENT_CODES): Promise<boolean> {
-        console.log(factura);
+        this.logger.log(`[ExecuteCargaDocumentoRespaldo] facturaId=${factura.publiInvoiceId} | status=${status}`);
+
         let mensaje: MessageDTO;
+
         if (status === EVENT_CODES.READY) {
-            const compararDatosOCR = await this.facturaService.compararDatosOCRConFactura(factura);
+            const facturaAlmacenada = await this.facturaRepository.getFacturaByID(factura.publiInvoiceId);
+            if (!facturaAlmacenada) {
+                this.logger.warn(`[ExecuteCargaDocumentoRespaldo] Factura no encontrada en BD: ${factura.publiInvoiceId}`);
+                mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
+            } else {
+                const notas = await this.facturaService.compararDatosOCRConFactura(factura, facturaAlmacenada);
+
+                if (notas.length > 0) {
+                    await this.facturaRepository.guardarNotasOCR(factura.publiInvoiceId, notas);
+                    this.logger.warn(`[ExecuteCargaDocumentoRespaldo] ${notas.length} discrepancia(s) OCR | facturaId=${factura.publiInvoiceId}`);
+                    mensaje = new MessageDTO(
+                        EVENT_CODES.FACTURA_CON_DISCREPANCIAS_OCR,
+                        EVENT_DESCRIPTIONS.FACTURA_CON_DISCREPANCIAS_OCR,
+                        true,
+                    );
+                    //TODO: si la factura esta publicada, se debe cambiarrr rde estado a PENDIENTE_AVLIDACION
+                    //TODO: se deben revocar todos los permisos de vvisualizacion actuales, y esperarr rque el cliente rerctifique informacion.
+                    //QUESTION: se debe volver a autorizar la publicacion de factura?
+                } else {
+                    mensaje = new MessageDTO(
+                        EVENT_CODES.FACTURA_RESPALDO_SIN_DISCREPANCIAS,
+                        EVENT_DESCRIPTIONS.FACTURA_RESPALDO_SIN_DISCREPANCIAS,
+                        false,
+                    );
+                }
+            }
         } else {
             mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
         }
+
+        const gestor = typeof factura.gestor === 'string' ? factura.gestor : factura.gestor?.username ?? '';
+        const notificacion = new NotificacionDTO<FacturaDTO>(
+            CATEGORY_PROCESS.DTE_FACTURA_RESPALDO,
+            factura.ownerUUID,
+            gestor,
+            factura.correlationId,
+            mensaje,
+            new FacturaDTO(),
+        );
+
+        this.messagePublisher.publish(
+            this.configService.get<string>('rabbitmq.exchange'),
+            this.configService.get<string>('rabbitmq.routingKey'),
+            notificacion,
+            { persistent: true },
+        );
+
         return true;
     }
 

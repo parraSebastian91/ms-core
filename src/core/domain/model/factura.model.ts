@@ -1,4 +1,11 @@
-import { facturaEstado } from "./constantes.model";
+import { createdBy, facturaEstado } from "./constantes.model";
+
+export interface NotaOCR {
+    campo: string;
+    valor_declarado: string;
+    valor_ocr: string;
+    nota: string;
+}
 
 export class Row {
     factura_id: string;
@@ -29,6 +36,8 @@ export class Row {
     gestor_username: string;
     correlation_id: string;
     asset_id: string;
+    created_by: createdBy;
+    notas?: string[];
 }
 
 export class FacturaModel {
@@ -54,6 +63,8 @@ export class FacturaModel {
     ofertas_aceptadas: number;
     ofertas_rechazadas: number;
     url_factura: string | null;
+    createdBy: createdBy;
+    notas?: string[];
     constructor(ownerUUID: string, gestor: { uuid: string, username: string }, status: facturaEstado, correlationId: string) {
         this.assetId = "";
         this.ownerUUID = ownerUUID;
@@ -73,6 +84,7 @@ export class FacturaModel {
         this.ofertas_aceptadas = 0;
         this.ofertas_rechazadas = 0;
         this.url_factura = null;
+        this.createdBy = createdBy.FORM;
     }
 
     static fromEntity(entity: Row): FacturaModel {
@@ -100,6 +112,10 @@ export class FacturaModel {
         factura.ofertas_aceptadas = entity.ofertas_aceptadas || 0;
         factura.ofertas_rechazadas = entity.ofertas_rechazadas || 0;
         factura.url_factura = entity.url_factura;
+        factura.createdBy = entity.created_by as createdBy;
+        if (entity.notas) {
+            factura.notas = entity.notas;
+        }
         return factura;
     }
 

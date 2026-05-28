@@ -35,5 +35,8 @@ export class PermisosRepositoryAdapter implements IPermisosManagerRepository {
         return 0;
     }
 
+    async RevokeAccess_Organization(tipoRecurso: string, resourceId: string, userGrante: string, organizacionID: string, permissions: string[], razon_descripcion: string): Promise<number> {
+        return 0;
+    }
 
 }

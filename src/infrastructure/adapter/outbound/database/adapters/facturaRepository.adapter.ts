@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { facturaEstado } from "src/core/domain/model/constantes.model";
-import { FacturaModel } from "src/core/domain/model/factura.model";
+import { FacturaModel, NotaOCR } from "src/core/domain/model/factura.model";
 import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
@@ -127,7 +127,15 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         try {
             const result = await this.dataSource.query(query, params);
             this.logger.debug(`Facturas obtenidas: ${JSON.stringify(result)}`);
-            return result.map((row: any) => FacturaModel.fromEntity(row)) || [];
+            const facturas: FacturaModel[] = result.map((row: any) => FacturaModel.fromEntity(row)) || [];
+
+            if (facturas.length > 0) {
+                const facturaIds = facturas.map(f => f.publiInvoiceId).filter(Boolean);
+                const notasMap = await this.fetchNotasForFacturas(facturaIds);
+                facturas.forEach(f => { f.notas = notasMap.get(f.publiInvoiceId) ?? []; });
+            }
+
+            return facturas;
         } catch (error: any) {
             this.logger.error(
                 `Error al obtener las facturas: ${error?.message ?? error}`,
@@ -139,7 +147,25 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
     }
 
     async getFacturaByID(facturaID: string): Promise<FacturaModel | null> {
-        return null; // Implementa esta función si es necesario para tu caso de uso
+        const query = `
+            SELECT
+                *
+            FROM permisos.vw_facturas_publicadas_ofertadas_base f
+            WHERE f.factura_id = $1
+            LIMIT 1
+        `;
+        try {
+            const result = await this.dataSource.query(query, [facturaID]);
+            if (!result.length) return null;
+            return FacturaModel.fromEntity(result[0]);
+        } catch (error: any) {
+            this.logger.error(
+                `Error al obtener factura por ID: ${error?.message ?? error}`,
+                `facturaID: ${facturaID}`,
+                error?.stack,
+            );
+            return null;
+        }
     }
 
     async validateFacturaEditable(facturaID: string): Promise<boolean> {
@@ -306,6 +332,73 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             return result[0] as VersionTerminosRecord;
         } catch (error: any) {
             this.logger.error(`Error al obtener versión de términos activa: ${error?.message ?? error}`, error?.stack);
+            throw error;
+        }
+    }
+
+    private async fetchNotasForFacturas(facturaIds: string[]): Promise<Map<string, string[]>> {
+        const map = new Map<string, string[]>();
+        if (!facturaIds.length) return map;
+        const placeholders = facturaIds.map((_, i) => `$${i + 1}`).join(',');
+        const query = `
+            SELECT factura_id::text, nota
+            FROM   factura.notas_ocr
+            WHERE  factura_id IN (${placeholders})
+              AND  resuelto = false
+            ORDER BY created_at ASC
+        `;
+        try {
+            const rows: Array<{ factura_id: string; nota: string }> =
+                await this.dataSource.query(query, facturaIds);
+            for (const row of rows) {
+                const existing = map.get(row.factura_id) ?? [];
+                existing.push(row.nota);
+                map.set(row.factura_id, existing);
+            }
+        } catch (error: any) {
+            this.logger.error(
+                `Error al obtener notas OCR: ${error?.message ?? error}`,
+                error?.stack,
+            );
+        }
+        return map;
+    }
+
+    async guardarNotasOCR(facturaId: string, notas: NotaOCR[]): Promise<void> {
+        if (!notas.length) return;
+        const values = notas
+            .map((_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`)
+            .join(',');
+        const params: any[] = notas.flatMap(n => [
+            facturaId,
+            n.campo,
+            n.valor_declarado,
+            n.valor_ocr,
+        ]);
+        // campo + nota separate column: insert nota text as well
+        const query = `
+            INSERT INTO factura.notas_ocr (factura_id, campo, valor_declarado, valor_ocr, nota)
+            VALUES ${notas.map((_, i) => {
+                const base = i * 5 + 1;
+                return `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+            }).join(',')}
+        `;
+        const fullParams: any[] = notas.flatMap(n => [
+            facturaId,
+            n.campo,
+            n.valor_declarado,
+            n.valor_ocr,
+            n.nota,
+        ]);
+        try {
+            await this.dataSource.query(query, fullParams);
+            this.logger.log(`[OK] guardarNotasOCR | facturaId=${facturaId} | notas=${notas.length}`);
+        } catch (error: any) {
+            this.logger.error(
+                `Error al guardar notas OCR: ${error?.message ?? error}`,
+                `facturaId: ${facturaId}`,
+                error?.stack,
+            );
             throw error;
         }
     }
