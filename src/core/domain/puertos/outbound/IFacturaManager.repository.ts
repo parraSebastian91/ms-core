@@ -20,4 +20,6 @@ export interface IFacturaManagerRepository {
     getVersionTerminosActiva(): Promise<VersionTerminosRecord>;
     registrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void>;
     guardarNotasOCR(facturaId: string, notas: NotaOCR[]): Promise<void>;
+    updateNotasOCRResueltas(facturaId: string, campo: string): Promise<void>;
+    fetchNotasForFacturas(facturaIds: string[]): Promise<Map<string, string[]>>;
 }

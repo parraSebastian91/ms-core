@@ -11,6 +11,7 @@ import { IStorageService } from "src/core/domain/puertos/outbound/IStorageServic
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { IWorkTeamRepository } from "src/core/domain/puertos/outbound/IWorkTeam.rerpository";
 import { FacturaCreateError } from "src/core/share/errors/FacturaCreate.error";
+import { PermisoError } from "src/core/share/errors/Permiso.error";
 import { UserAndOrgError } from "src/core/share/errors/UserAndOrg.error";
 import { FacturaDTO } from "src/infrastructure/adapter/outbound/queue/dto/factura.dto";
 import { MessageDTO, NotificacionDTO } from "src/infrastructure/adapter/outbound/queue/dto/Notificacion.dto";
@@ -30,6 +31,10 @@ export class FacturaManagerUseCase implements IFacturaManager {
     ) { }
 
     async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
+        //**
+        // esta funcion solo registra la factura en base de datos, no la Publica.
+        // Parra publicarrla se necesita aceptarr terminos, dar permisos y notificar
+        //  */
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const gestorUsername = typeof factura.gestor === "string" ? factura.gestor : factura.gestor.username;;
 
@@ -123,8 +128,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
             );
             return false;
         }
-
-        this.logger.log(`Factura publicada exitosamente para correlación: ${factura.correlationId}`);
+        factura.publiInvoiceId = resultQuery;
+        this.logger.log(`Factura registrada exitosamente para correlación: ${factura.correlationId}`);
 
         const facturaDTO: FacturaDTO = {
             assetId: factura.assetId,
@@ -136,6 +141,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
             fechaVencimiento: factura.fechaVencimiento,
             status: factura.status,
         };
+
+        await this.facturaService.guardarNotasOCR(factura, factura);
 
         publishNotification(
             this.configService.get<string>('rabbitmq.routingKey'),
@@ -260,6 +267,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
             throw new Error("La factura no es editable");
         }
         const { id, valor, isUpdate, mensaje } = await this.facturaRepository.updateFactura(factura);
+        await this.facturaRepository.updateNotasOCRResueltas(factura.id, factura.campoEditado.nombre);
+
         return { campo: factura.campoEditado.nombre, id, valor, isUpdate, mensaje };
     }
 
@@ -279,6 +288,13 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
     async ExecuteRegistrarAutorizacion(payload: AutorizacionPublicacionPayload): Promise<void> {
         this.logger.log(`[START] RegistrarAutorizacion | facturaId=${payload.facturaId} | usuarioUUID=${payload.usuarioUUID} | acepto=${payload.acepto}`);
+
+        const notasMap = await this.facturaRepository.fetchNotasForFacturas([payload.facturaId]);
+        const notasSinResolver = notasMap.get(payload.facturaId) ?? [];
+        if (notasSinResolver.length > 0) {
+            this.logger.warn(`No se puede autorizar la publicación de la factura ${payload.facturaId} porque tiene ${notasSinResolver.length} nota(s) OCR sin resolver.`);
+            throw new PermisoError(`No se puede autorizar la publicación de la factura ${payload.facturaId} porque tiene notas del Sistema sin resolver.`);
+        }
 
         await this.facturaRepository.registrarAutorizacion(payload);
 
@@ -315,26 +331,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
                 this.logger.warn(`[ExecuteCargaDocumentoRespaldo] Factura no encontrada en BD: ${factura.publiInvoiceId}`);
                 mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);
             } else {
-                const notas = await this.facturaService.compararDatosOCRConFactura(factura, facturaAlmacenada);
-
-                if (notas.length > 0) {
-                    await this.facturaRepository.guardarNotasOCR(factura.publiInvoiceId, notas);
-                    this.logger.warn(`[ExecuteCargaDocumentoRespaldo] ${notas.length} discrepancia(s) OCR | facturaId=${factura.publiInvoiceId}`);
-                    mensaje = new MessageDTO(
-                        EVENT_CODES.FACTURA_CON_DISCREPANCIAS_OCR,
-                        EVENT_DESCRIPTIONS.FACTURA_CON_DISCREPANCIAS_OCR,
-                        true,
-                    );
-                    //TODO: si la factura esta publicada, se debe cambiarrr rde estado a PENDIENTE_AVLIDACION
-                    //TODO: se deben revocar todos los permisos de vvisualizacion actuales, y esperarr rque el cliente rerctifique informacion.
-                    //QUESTION: se debe volver a autorizar la publicacion de factura?
-                } else {
-                    mensaje = new MessageDTO(
-                        EVENT_CODES.FACTURA_RESPALDO_SIN_DISCREPANCIAS,
-                        EVENT_DESCRIPTIONS.FACTURA_RESPALDO_SIN_DISCREPANCIAS,
-                        false,
-                    );
-                }
+                mensaje = await this.facturaService.guardarNotasOCR(factura, facturaAlmacenada);
             }
         } else {
             mensaje = new MessageDTO(EVENT_CODES.FACTURA_ERROR_PROCESAMIENTO, EVENT_DESCRIPTIONS.FACTURA_ERROR_PROCESAMIENTO, true);

@@ -23,6 +23,10 @@ export class PermisosService implements IPermisosManagerService {
         return this.permisosManagerRepository.GrantAccess_Organization(tipoRecurso, resourceId, userGrante, organizacionID, permissions, razon_descripcion);
     }
 
+    async RevokeAccess_Organization(tipoRecurso: string, resourceId: string, organizacionID: string, permissions: string[]): Promise<number> {
+        return this.permisosManagerRepository.RevokeAccess_Organization(tipoRecurso, resourceId, organizacionID, permissions);
+    }
 
-    
+
+
 }

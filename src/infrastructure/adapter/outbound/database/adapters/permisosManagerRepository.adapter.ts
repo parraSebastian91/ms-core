@@ -21,22 +21,36 @@ export class PermisosRepositoryAdapter implements IPermisosManagerRepository {
             $5::TEXT,
             $6::TEXT
         );`;
-       try {
-        const result = await this.dataSource.query(query, [tipoRecurso, resourceId, organizacionID, userGrante, permissions.join(","), razon_descripcion]);
-        this.logger.debug(`GrantAccess_Organization result: ${JSON.stringify(result)}`);
-        return result[0].grant_access_to_organization_groups;
-       } catch (error) {
-        this.logger.error("Error executing GrantAccess_Organization:", error);
-        throw new RepositoryAdapterError("Error executing GrantAccess_Organization");
-       }
+        try {
+            const result = await this.dataSource.query(query, [tipoRecurso, resourceId, organizacionID, userGrante, permissions.join(","), razon_descripcion]);
+            this.logger.debug(`GrantAccess_Organization result: ${JSON.stringify(result)}`);
+            return result[0].grant_access_to_organization_groups;
+        } catch (error) {
+            this.logger.error("Error executing GrantAccess_Organization:", error);
+            throw new RepositoryAdapterError("Error executing GrantAccess_Organization");
+        }
     }
 
     async GrantAccess_user(tipoRecurso: string, resourceId: string, userGrante: string, userGrantTo: string, permissions: string[], razon_descripcion: string): Promise<number> {
         return 0;
     }
 
-    async RevokeAccess_Organization(tipoRecurso: string, resourceId: string, userGrante: string, organizacionID: string, permissions: string[], razon_descripcion: string): Promise<number> {
-        return 0;
+    async RevokeAccess_Organization(tipoRecurso: string, resourceId: string, organizacionID: string, permissions: string[]): Promise<number> {
+        const query = `
+        SELECT permisos.revoke_access_from_organization_groups(
+            $1::TEXT,
+            $2::UUID,
+            $3::UUID,
+            $4::TEXT
+        );`;
+        try {
+            const result = await this.dataSource.query(query, [tipoRecurso, resourceId, organizacionID, permissions.join(",")]);
+            this.logger.debug(`RevokeAccess_Organization result: ${JSON.stringify(result)}`);
+            return result[0].revoke_access_from_organization_groups;
+        } catch (error) {
+            this.logger.error("Error executing RevokeAccess_Organization:", error);
+            throw new RepositoryAdapterError("Error executing RevokeAccess_Organization");
+        }
     }
 
 }

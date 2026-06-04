@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { facturaEstado } from "src/core/domain/model/constantes.model";
 import { FacturaModel, NotaOCR } from "src/core/domain/model/factura.model";
-import { FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
+import { CampoFactura, FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
 import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "src/core/domain/puertos/inbound/IFacturaPublisher.interface";
 import { DataSource, QueryRunner } from "typeorm";
@@ -336,7 +336,7 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         }
     }
 
-    private async fetchNotasForFacturas(facturaIds: string[]): Promise<Map<string, string[]>> {
+    async fetchNotasForFacturas(facturaIds: string[]): Promise<Map<string, string[]>> {
         const map = new Map<string, string[]>();
         if (!facturaIds.length) return map;
         const placeholders = facturaIds.map((_, i) => `$${i + 1}`).join(',');
@@ -379,9 +379,9 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         const query = `
             INSERT INTO factura.notas_ocr (factura_id, campo, valor_declarado, valor_ocr, nota)
             VALUES ${notas.map((_, i) => {
-                const base = i * 5 + 1;
-                return `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
-            }).join(',')}
+            const base = i * 5 + 1;
+            return `($${base}, $${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+        }).join(',')}
         `;
         const fullParams: any[] = notas.flatMap(n => [
             facturaId,
@@ -398,6 +398,26 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 `Error al guardar notas OCR: ${error?.message ?? error}`,
                 `facturaId: ${facturaId}`,
                 error?.stack,
+            );
+            throw error;
+        }
+    }
+
+    async updateNotasOCRResueltas(facturaId: string, campo: CampoFactura): Promise<void> {
+        const query = `
+        UPDATE 
+            factura.notas_ocr n
+        SET resuelto=$1
+        WHERE
+        n.factura_id = $2
+        and n.campo = $3
+        `;
+        try {
+            await this.dataSource.query(query, [true, facturaId, campo]);
+        } catch (error: any) {
+            this.logger.error(
+                `Error al actualizar notas OCR resueltas | facturaId=${facturaId}: ${error?.message ?? error}`,
+                error?.stack
             );
             throw error;
         }
