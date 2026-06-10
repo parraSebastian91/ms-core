@@ -15,6 +15,23 @@ import { FacturaManagerController } from './controllers/factura-manager.controll
 import { AccessTokenInterceptor } from './middleware/access-token.interceptor';
 import { LoggerInterceptor } from './middleware/loggin.interceptor';
 import { AccessTokenContext } from './middleware/access-token.context';
+import { CatalogoController } from './controllers/catalogo.controller';
+import { CatalogoRepositoryAdapter } from '../../outbound/database/adapters/catalogoRepository.adapter';
+import { CATALOGO_REPOSITORY } from 'src/core/domain/puertos/outbound/ICatalogo.repository';
+import { OrganizacionController } from './controllers/organizacion.controller';
+import { VerificacionTributariaRepositoryAdapter } from '../../outbound/database/adapters/verificacionTributariaRepository.adapter';
+import { VERIFICACION_TRIBUTARIA_REPOSITORY } from 'src/core/domain/puertos/outbound/IVerificacionTributaria.repository';
+import { organizacionRepositoriAdapter } from '../../outbound/database/adapters/organizacionRepository.adapter';
+import { ORGANIZACION_REPOSITORY } from 'src/core/domain/puertos/outbound/IOrganizacion.repository';
+import { SolicitudAccesoController } from './controllers/solicitudAcceso.controller';
+import { SolicitudAccesoRepositoryAdapter } from '../../outbound/database/adapters/solicitudAccesoRepository.adapter';
+import { SOLICITUD_ACCESO_REPOSITORY } from 'src/core/domain/puertos/outbound/ISolicitudAcceso.repository';
+import { OrganizacionAdminController } from './controllers/organizacion-admin.controller';
+import { OrganizacionAdminRepositoryAdapter } from '../../outbound/database/adapters/organizacionAdminRepository.adapter';
+import { ORGANIZACION_ADMIN_REPOSITORY } from 'src/core/domain/puertos/outbound/IOrganizacionAdmin.repository';
+import { ORGANIZACION_USECASE } from 'src/core/domain/puertos/inbound/IOrganizacionAdministrator';
+import { OrganizacionUseCase } from 'src/core/application/usesCase/organizacion/organizacion.usecase';
+import { TributaryService } from 'src/core/application/service/tributary.service';
 
 @Module({
     imports: [
@@ -27,13 +44,53 @@ import { AccessTokenContext } from './middleware/access-token.context';
         UserProfileController,
         WebhookController,
         HealthcheckController,
-        FacturaManagerController
+        FacturaManagerController,
+        CatalogoController,
+        OrganizacionController,
+        SolicitudAccesoController,
+        OrganizacionAdminController,
     ],
     providers: [
         AccessTokenContext,
         AuthGuard,
         PermissionsGuard,
         RolesGuard,
+        CatalogoRepositoryAdapter,
+        {
+            provide: CATALOGO_REPOSITORY,
+            useExisting: CatalogoRepositoryAdapter,
+        },
+        VerificacionTributariaRepositoryAdapter,
+        {
+            provide: VERIFICACION_TRIBUTARIA_REPOSITORY,
+            useExisting: VerificacionTributariaRepositoryAdapter,
+        },
+        organizacionRepositoriAdapter,
+        {
+            provide: ORGANIZACION_REPOSITORY,
+            useExisting: organizacionRepositoriAdapter,
+        },
+        SolicitudAccesoRepositoryAdapter,
+        {
+            provide: SOLICITUD_ACCESO_REPOSITORY,
+            useExisting: SolicitudAccesoRepositoryAdapter,
+        },
+        OrganizacionAdminRepositoryAdapter,
+        {
+            provide: ORGANIZACION_ADMIN_REPOSITORY,
+            useExisting: OrganizacionAdminRepositoryAdapter,
+        },
+        {
+            provide: TributaryService,
+            inject: [VERIFICACION_TRIBUTARIA_REPOSITORY],
+            useFactory: (verificacionRepo) => new TributaryService(verificacionRepo),
+        },
+        {
+            provide: ORGANIZACION_USECASE,
+            inject: [ORGANIZACION_REPOSITORY, TributaryService, VERIFICACION_TRIBUTARIA_REPOSITORY],
+            useFactory: (orgRepo, tributaryService, verificacionRepo) =>
+                new OrganizacionUseCase(orgRepo, tributaryService, verificacionRepo),
+        },
         {
             provide: APP_INTERCEPTOR,
             useClass: LoggerInterceptor,

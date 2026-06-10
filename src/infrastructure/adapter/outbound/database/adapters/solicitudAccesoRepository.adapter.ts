@@ -1,0 +1,201 @@
+import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import {
+    CrearSolicitudInput,
+    ISolicitudAccesoRepository,
+    ResolverSolicitudInput,
+    SolicitudRow,
+} from 'src/core/domain/puertos/outbound/ISolicitudAcceso.repository';
+
+export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoRepository {
+
+    private readonly logger = new Logger(SolicitudAccesoRepositoryAdapter.name);
+
+    constructor(
+        @InjectDataSource()
+        private readonly dataSource: DataSource,
+    ) { }
+
+    async crear(input: CrearSolicitudInput): Promise<{ solicitudId: number; token: string; expiraEn: string }> {
+        // Expirar pendientes antiguas antes de crear una nueva
+        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+
+        // Verificar que no haya una solicitud PENDIENTE activa
+        const existing = await this.dataSource.query(
+            `SELECT solicitud_id FROM core.organizacion_solicitud_acceso
+             WHERE organizacion_id = $1 AND solicitante_uuid = $2 AND estado = 'PENDIENTE'`,
+            [input.organizacionId, input.solicitanteUuid],
+        );
+        if (existing.length > 0) {
+            throw new ConflictException('Ya tienes una solicitud de acceso pendiente para esta organización.');
+        }
+
+        const rows = await this.dataSource.query(
+            `INSERT INTO core.organizacion_solicitud_acceso
+               (organizacion_id, solicitante_uuid, rol_solicitado, mensaje)
+             VALUES ($1, $2, $3, $4)
+             RETURNING solicitud_id, token, expira_en`,
+            [
+                input.organizacionId,
+                input.solicitanteUuid,
+                input.rolSolicitado ?? 'COLABORADOR',
+                input.mensaje ?? null,
+            ],
+        );
+
+        const row = rows[0];
+        this.logger.log(`[crear] solicitud_id=${row.solicitud_id} org=${input.organizacionId} user=${input.solicitanteUuid}`);
+        return {
+            solicitudId: Number(row.solicitud_id),
+            token: row.token,
+            expiraEn: row.expira_en,
+        };
+    }
+
+    async crearPorUuid(
+        organizacionUuid: string,
+        solicitanteUuid: string,
+        rolSolicitado?: string,
+        mensaje?: string,
+    ): Promise<{ solicitudId: number; token: string; expiraEn: string }> {
+        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+
+        const existing = await this.dataSource.query(
+            `SELECT s.solicitud_id
+             FROM core.organizacion_solicitud_acceso s
+             JOIN core.organizacion o ON o.organizacion_id = s.organizacion_id
+             WHERE o.organizacion_uuid = $1::uuid
+               AND s.solicitante_uuid = $2::uuid
+               AND s.estado = 'PENDIENTE'`,
+            [organizacionUuid, solicitanteUuid],
+        );
+        if (existing.length > 0) {
+            throw new ConflictException('Ya tienes una solicitud de acceso pendiente para esta organización.');
+        }
+
+        const rows = await this.dataSource.query(
+            `INSERT INTO core.organizacion_solicitud_acceso
+               (organizacion_id, solicitante_uuid, rol_solicitado, mensaje)
+             SELECT o.organizacion_id, $2::uuid, COALESCE($3, 'COLABORADOR'), $4
+             FROM core.organizacion o
+             WHERE o.organizacion_uuid = $1::uuid AND o.activo = true
+             RETURNING solicitud_id, token, expira_en`,
+            [organizacionUuid, solicitanteUuid, rolSolicitado ?? null, mensaje ?? null],
+        );
+
+        if (rows.length === 0) {
+            throw new NotFoundException('Organización no encontrada.');
+        }
+
+        const row = rows[0];
+        this.logger.log(`[crearPorUuid] solicitud_id=${row.solicitud_id} orgUuid=${organizacionUuid} user=${solicitanteUuid}`);
+        return {
+            solicitudId: Number(row.solicitud_id),
+            token: row.token,
+            expiraEn: row.expira_en,
+        };
+    }
+
+    async listarPorOrganizacion(organizacionId: number, estado?: string): Promise<SolicitudRow[]> {
+        // Expirar antes de consultar para que el panel muestre estados actualizados
+        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+
+        const rows = await this.dataSource.query(
+            `SELECT
+               solicitud_id, organizacion_id, organizacion_nombre, organizacion_rut,
+               solicitante_uuid, solicitante_nombre, solicitante_apellido, solicitante_email,
+               rol_solicitado, mensaje, token, estado,
+               resuelto_por, resuelto_en, motivo_rechazo,
+               creado_en, expira_en, esta_expirada
+             FROM core.v_solicitudes_acceso
+             WHERE organizacion_id = $1
+               AND ($2::text IS NULL OR estado = $2)
+             ORDER BY creado_en DESC`,
+            [organizacionId, estado ?? null],
+        );
+        return rows.map(this.mapRow);
+    }
+
+    async obtenerPorToken(token: string): Promise<SolicitudRow | null> {
+        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+        const rows = await this.dataSource.query(
+            `SELECT * FROM core.v_solicitudes_acceso WHERE token = $1`,
+            [token],
+        );
+        return rows.length > 0 ? this.mapRow(rows[0]) : null;
+    }
+
+    async resolver(input: ResolverSolicitudInput): Promise<{ ok: boolean }> {
+        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+
+        const solicitud = await this.obtenerPorToken(input.token);
+        if (!solicitud) {
+            throw new NotFoundException('Solicitud no encontrada o token inválido.');
+        }
+        if (solicitud.estado !== 'PENDIENTE') {
+            throw new ConflictException(`La solicitud ya fue ${solicitud.estado.toLowerCase()}.`);
+        }
+
+        await this.dataSource.query(
+            `UPDATE core.organizacion_solicitud_acceso
+             SET estado = $1, resuelto_por = $2, resuelto_en = now(), motivo_rechazo = $3
+             WHERE token = $4`,
+            [input.decision, input.adminUuid, input.motivoRechazo ?? null, input.token],
+        );
+
+        // Si se aprueba, insertar en organizacion_miembro
+        if (input.decision === 'APROBADA') {
+            await this.dataSource.query(
+                `INSERT INTO core.organizacion_miembro
+                   (organizacion_id, usuario_uuid, rol_codigo, incorporado_por)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (organizacion_id, usuario_uuid)
+                   DO UPDATE SET activo = true, rol_codigo = EXCLUDED.rol_codigo,
+                                 incorporado_por = EXCLUDED.incorporado_por,
+                                 incorporado_en = now()`,
+                [solicitud.organizacionId, solicitud.solicitanteUuid, solicitud.rolSolicitado, input.adminUuid],
+            );
+            this.logger.log(`[resolver] APROBADA org=${solicitud.organizacionId} user=${solicitud.solicitanteUuid}`);
+        }
+
+        return { ok: true };
+    }
+
+    async cancelar(solicitudId: number, solicitanteUuid: string): Promise<{ ok: boolean }> {
+        const result = await this.dataSource.query(
+            `UPDATE core.organizacion_solicitud_acceso
+             SET estado = 'CANCELADA'
+             WHERE solicitud_id = $1 AND solicitante_uuid = $2 AND estado = 'PENDIENTE'
+             RETURNING solicitud_id`,
+            [solicitudId, solicitanteUuid],
+        );
+        if (result.length === 0) {
+            throw new NotFoundException('Solicitud pendiente no encontrada para este usuario.');
+        }
+        return { ok: true };
+    }
+
+    private mapRow(r: any): SolicitudRow {
+        return {
+            solicitudId:        Number(r.solicitud_id),
+            organizacionId:     Number(r.organizacion_id),
+            organizacionNombre: r.organizacion_nombre,
+            organizacionRut:    r.organizacion_rut,
+            solicitanteUuid:    r.solicitante_uuid,
+            solicitanteNombre:  r.solicitante_nombre,
+            solicitanteApellido:r.solicitante_apellido,
+            solicitanteEmail:   r.solicitante_email,
+            rolSolicitado:      r.rol_solicitado,
+            mensaje:            r.mensaje,
+            token:              r.token,
+            estado:             r.estado,
+            resueltoPor:        r.resuelto_por,
+            resueltoEn:         r.resuelto_en,
+            motivoRechazo:      r.motivo_rechazo,
+            creadoEn:           r.creado_en,
+            expiraEn:           r.expira_en,
+            estaExpirada:       r.esta_expirada,
+        };
+    }
+}

@@ -19,11 +19,13 @@ export class AccessTokenInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
     const accessToken = this.extractAccessToken(request);
     const correlationId = this.extractCorrelationId(request) ?? randomUUID();
+    const userUuid: string | undefined = (request as any)?.user?.userUuid;
+    const orgUuid: string | undefined  = (request as any)?.user?.orgUuid;
 
     response.setHeader('X-Correlation-Id', correlationId);
 
     return this.accessTokenContext
-      .runWithContext({ accessToken, correlationId }, () => next.handle())
+      .runWithContext({ accessToken, correlationId, userUuid, orgUuid }, () => next.handle())
       .pipe(
         tap(() => void 0),
       );

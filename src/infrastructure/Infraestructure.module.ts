@@ -23,6 +23,8 @@ import axios, { AxiosHeaders } from 'axios';
 import { StorageServiceAdapter } from './adapter/outbound/external-Service/storageService.adapter';
 import { PermisosRepositoryAdapter } from './adapter/outbound/database/adapters/permisosManagerRepository.adapter';
 import { organizacionRepositoriAdapter } from './adapter/outbound/database/adapters/organizacionRepository.adapter';
+import { CatalogoRepositoryAdapter } from './adapter/outbound/database/adapters/catalogoRepository.adapter';
+import { CATALOGO_REPOSITORY } from 'src/core/domain/puertos/outbound/ICatalogo.repository';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -92,6 +94,11 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         StorageServiceAdapter,
         PermisosRepositoryAdapter,
         organizacionRepositoriAdapter,
+        CatalogoRepositoryAdapter,
+        {
+            provide: CATALOGO_REPOSITORY,
+            useExisting: CatalogoRepositoryAdapter,
+        },
         {
             provide: MESSAGE_PUBLISHER,
             useExisting: QueueClientAdapter,
@@ -154,6 +161,8 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         StorageServiceAdapter,
         PermisosRepositoryAdapter,
         organizacionRepositoriAdapter,
+        CatalogoRepositoryAdapter,
+        CATALOGO_REPOSITORY,
         STORAGE_SERVICE,
         ClientsModule
     ],

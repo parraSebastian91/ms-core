@@ -9,6 +9,7 @@ export class UserOrganizacionProfileDTO {
     usuario_uuid: string;
     userName: string;
     tipo_participante: string;
+    tipo_organizacion: string;
     static fromModelArray(models: UserOrganizacionProfileModel[]): UserOrganizacionProfileDTO[] {
         return models.map(model => {
             const dto = new UserOrganizacionProfileDTO();
@@ -20,6 +21,7 @@ export class UserOrganizacionProfileDTO {
             dto.usuario_uuid = model.usuario_uuid;
             dto.userName = model.userName;
             dto.tipo_participante = model.tipo_participante;
+            dto.tipo_organizacion = model.tipo_organizacion;
             return dto;
         }).sort((a, b) => a.orden - b.orden);
     }

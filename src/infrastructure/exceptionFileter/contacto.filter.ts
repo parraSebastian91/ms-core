@@ -13,6 +13,8 @@ import { DomainException } from "src/core/share/errors/DomainException";
 import { FacturaError } from "src/core/share/errors/Factura.error";
 import { RepositoryAdapterError } from "src/core/share/errors/RepositoryAdapter.error";
 import { FacturaCreateError } from "src/core/share/errors/FacturaCreate.error";
+import { OrgNotFoundError } from "src/core/share/errors/OrganizacionNotFound.error";
+import { UserProfileError } from "src/core/share/errors/UserProfile.error";
 
 @Catch()
 export class CoreExceptionFilter implements ExceptionFilter {
@@ -101,7 +103,16 @@ export class CoreExceptionFilter implements ExceptionFilter {
             Logger.error(`Error: ${exception.message}`, exception.stack);
             status = HttpStatus.UNPROCESSABLE_ENTITY;
             message = exception.message;
+        } else if (exception instanceof OrgNotFoundError) {
+            Logger.warn(`OrgNotFoundError: ${exception.message}`);
+            status = HttpStatus.NOT_FOUND;
+            message = exception.message;
+        } else if (exception instanceof UserProfileError) {
+            Logger.error(`Error: ${exception.message}`, exception.stack);
+            status = HttpStatus.NOT_FOUND;
+            message = exception.message;
         }
+
         else {
             console.error(`Exception caught: ${exception.message}`, exception.stack);
             Logger.error(`Unexpected error: ${exception.message}`, exception.stack);

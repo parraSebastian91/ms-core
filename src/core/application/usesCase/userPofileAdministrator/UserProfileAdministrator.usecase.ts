@@ -5,6 +5,7 @@ import { GetProfileQuery } from "./query/getProfile.query";
 import { IUserProfileRepository } from "src/core/domain/puertos/outbound/IUserProfile.Repository";
 import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
 import { UserOrganizacionProfileModel } from "src/core/domain/model/userOrganizacionProfile.model";
+import { UserProfileError } from "src/core/share/errors/UserProfile.error";
 
 
 @Injectable()
@@ -19,7 +20,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         const userProfile = await this.userProfileRepository.getUserProfile(query.uuid);
         if (!userProfile) {
             this.logger.warn(`User profile not found for UUID: ${query.uuid}`);
-            throw new Error("User profile not found");
+            throw new UserProfileError("User profile not found");
         }
         this.logger.log(`User profile retrieved for UUID: ${query.uuid}`);
         return userProfile;
@@ -29,7 +30,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         const systemNavigation = await this.userProfileRepository.GetSistema(uuid);
         if (!systemNavigation) {
             this.logger.warn(`System navigation not found for UUID: ${uuid}`);
-            throw new Error("System navigation not found");
+            throw new UserProfileError("System navigation not found");
         }
         this.logger.log(`System navigation retrieved for UUID: ${uuid}`);
         return systemNavigation;
@@ -39,7 +40,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         const userProfileImage = await this.userProfileRepository.GetUserProfileImage(uuid);
         if (!userProfileImage) {
             this.logger.warn(`User profile image not found for UUID: ${uuid}`);
-            throw new Error("User profile image not found");
+            throw new UserProfileError("User profile image not found");
         }
         this.logger.log(`User profile image retrieved for UUID: ${uuid}`);
         return userProfileImage;
@@ -49,7 +50,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         const updatedUserProfile = await this.userProfileRepository.UpdateUserProfile(uuid, data);
         if (!updatedUserProfile) {
             this.logger.warn(`Failed to update user profile for UUID: ${uuid}`);
-            throw new Error("Failed to update user profile");
+            throw new UserProfileError("Failed to update user profile");
         }
         this.logger.log(`User profile updated for UUID: ${uuid}`);
         return updatedUserProfile;
@@ -59,7 +60,7 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         const userOrganizacionProfile = await this.userProfileRepository.getOrganizacionByUsuario(uuid);
         if (!userOrganizacionProfile || userOrganizacionProfile.length === 0) {
             this.logger.warn(`User organization profile not found for UUID: ${uuid}`);
-            throw new Error("User organization profile not found");
+            throw new UserProfileError("User organization profile not found");
         }
         if (userOrganizacionProfile.length > 1) {
             userOrganizacionProfile.push(Object.assign(new UserOrganizacionProfileModel(), { organizacion_uuid: "Todas", razon_social: "Todas", cargo: "Todas", nombre_contacto: "Todas", orden: 0 }));

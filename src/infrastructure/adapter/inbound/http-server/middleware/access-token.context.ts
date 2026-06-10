@@ -4,6 +4,10 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 type AccessTokenStore = {
   accessToken?: string;
   correlationId?: string;
+  /** UUID del usuario autenticado — usado para inyectar contexto RLS */
+  userUuid?: string;
+  /** UUID de la organización activa — usado para inyectar contexto RLS */
+  orgUuid?: string;
 };
 
 @Injectable()
@@ -24,5 +28,13 @@ export class AccessTokenContext {
 
   getCorrelationId(): string | undefined {
     return this.storage.getStore()?.correlationId;
+  }
+
+  getUserUuid(): string | undefined {
+    return this.storage.getStore()?.userUuid;
+  }
+
+  getOrgUuid(): string | undefined {
+    return this.storage.getStore()?.orgUuid;
   }
 }

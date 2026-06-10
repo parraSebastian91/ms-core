@@ -8,6 +8,7 @@ import { ProfileImageQueryResponse } from "../entities/profileImage.queryRespons
 import { ProfileImageModel } from "src/core/domain/model/userProfileImage.model";
 import { ImageProfileError } from "src/core/share/errors/ImageProfile.error";
 import { UserOrganizacionProfileModel } from "src/core/domain/model/userOrganizacionProfile.model";
+import { OrgNotFoundError } from "src/core/share/errors/OrganizacionNotFound.error";
 
 @Injectable()
 export class UserProfileRepositoryAdapter implements IUserProfileRepository {
@@ -53,8 +54,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
     }
 
     async GetSistema(uuid: string): Promise<any> {
-        const configuredSchema = (this.dataSource.options as { schema?: string }).schema || "public";
-        const schema = configuredSchema.replace(/"/g, '""');
+        
         const query = `SELECT
                         o.organizacion_uuid         AS organizacion_identity,
                         s.nombre                    AS nombre_sistema,
@@ -71,31 +71,29 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         f.icono  				    AS func_icon,
                         p.per_cod                   AS codigo_permiso,
                         p.per_nombre                AS nombre_permiso
-                    FROM "${schema}".usuario u
-                        JOIN "${schema}".contacto c
-                            ON c.contacto_id = u.contacto_id
-                        JOIN "${schema}".organizacion_contacto oc
-                            ON oc.contacto_id = c.contacto_id
-                        JOIN "${schema}".organizacion o
-                            ON o.organizacion_id = oc.organizacion_id
-                            AND o.activo = true
-                        JOIN "${schema}".organizacion_sistema os
+                    FROM core.usuario u 
+                        join core.organizacion_miembro om
+                            on u.usuario_uuid = om.usuario_uuid 
+                            and om.activo = true
+                        join core.organizacion o 
+                            on o.organizacion_id = om.organizacion_id 
+                        JOIN core.organizacion_sistema os
                             ON os.organizacion_id = o.organizacion_id
-                        JOIN "${schema}".sistema s
+                        JOIN core.sistema s
                             ON s.sistema_id = os.sistema_id
                             AND s.activo = true
-                        JOIN "${schema}".modulo m
+                        JOIN core.modulo m
                             ON m.sistema_id = s.sistema_id
                             AND m.activo = true
-                        LEFT JOIN "${schema}".funcionalidad f
+                        LEFT JOIN core.funcionalidad f
                             ON f.modulo_id = m.modulo_id
                             AND f.activo = true
-                        JOIN "${schema}".usuario_rol ur
+                        JOIN core.usuario_rol ur
                             ON ur.usuario_id = u.usuario_id
-                        JOIN "${schema}".rol_modulo_permiso rmp
+                        JOIN core.rol_modulo_permiso rmp
                             ON rmp.rol_id = ur.rol_id
                             AND rmp.modulo_id = m.modulo_id
-                        JOIN "${schema}".permiso p
+                        JOIN core.permiso p
                             ON p.permiso_id = rmp.permiso_id
                             AND p.per_activo = true
                     WHERE u.usuario_uuid = $1
@@ -124,7 +122,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const result = await this.dataSource.query<ProfileImageQueryResponse[]>(query, [uuid]);
         if (!result[0]?.metadata) {
             this.logger.warn(`No profile image found for UUID: ${uuid}`);
-            throw new ImageProfileError(`No profile image found for UUID: ${uuid}`);
+            throw new ImageProfileError(`No profile image found for user`);
         }
         return ProfileImageQueryResponse.toDomainModel(result);
     }
@@ -153,6 +151,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                             o.razon_social,
                             o.organizacion_uuid,
                             o.tipo_participante,
+                            o.tipo_organizacion,
                             CASE
                                 WHEN o.tipo_participante = 'FINANCIADORA' 
                                     AND r.codigo IN ('EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
@@ -184,8 +183,8 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         const values = [uuid];
         const result = await this.dataSource.query<UserOrganizacionProfileModel[]>(query, values);
         if (!result[0]) {
-            this.logger.warn(`Failed to fetch organization profile for UUID: ${uuid}`);
-            throw new Error("Failed to fetch organization profile");
+            this.logger.warn(`No se encontró una organización activa asociada al usuario o el usuario no tiene roles asignados en la organización para UUID: ${uuid}`);
+            throw new OrgNotFoundError("No se encontró una organización activa asociada al usuario o el usuario no tiene roles asignados en la organización.");
         }
         return result;
     }

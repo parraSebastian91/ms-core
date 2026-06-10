@@ -8,5 +8,6 @@ export class UserOrganizacionProfileModel {
     razon_social: string;
     organizacion_uuid: string;
     tipo_participante: string;
+    tipo_organizacion: string;
     portal: string;
 }
