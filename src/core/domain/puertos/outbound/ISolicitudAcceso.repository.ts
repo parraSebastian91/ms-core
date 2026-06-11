@@ -43,7 +43,7 @@ export interface ISolicitudAccesoRepository {
     crearPorUuid(organizacionUuid: string, solicitanteUuid: string, rolSolicitado?: string, mensaje?: string): Promise<{ solicitudId: number; token: string; expiraEn: string }>;
 
     /** Admin obtiene solicitudes pendientes de su organización */
-    listarPorOrganizacion(organizacionId: number, estado?: string): Promise<SolicitudRow[]>;
+    listarPorOrganizacion(organizacionUuid: string, estado?: string): Promise<SolicitudRow[]>;
 
     /** Obtener una solicitud por token (para el link de email) */
     obtenerPorToken(token: string): Promise<SolicitudRow | null>;

@@ -18,6 +18,7 @@ export class UserProfileDTO {
     numero_documento: string;
     avatar: string; 
     tipo_contacto: string;
+    roles: string[];
 
 
     static builder(userProfile: UserProfileModel): UserProfileDTO {
@@ -37,6 +38,7 @@ export class UserProfileDTO {
         userProfileDTO.tipo_documento = userProfile.tipo_documento;
         userProfileDTO.numero_documento = userProfile.numero_documento;
         userProfileDTO.tipo_contacto = userProfile.tipo_contacto;
+        userProfileDTO.roles = userProfile.roles ?? [];
         return userProfileDTO;
     }
 

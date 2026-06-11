@@ -8,6 +8,7 @@ import {
     Logger,
     Param,
     ParseIntPipe,
+    ParseUUIDPipe,
     Post,
     Query,
     Req,
@@ -34,6 +35,7 @@ class CrearSolicitudDto {
 
 class ResolverSolicitudDto {
     /** UUID del admin que resuelve */
+    
     adminUuid: string;
     decision: 'APROBADA' | 'RECHAZADA';
     motivoRechazo?: string;
@@ -56,17 +58,12 @@ export class SolicitudAccesoController {
      */
     @Post(':id/solicitud-acceso')
     async crear(
-        @Param('id', ParseIntPipe) organizacionId: number,
+        @Param('id', ParseUUIDPipe) organizacionUuid: string,
         @Body() body: CrearSolicitudDto,
         @Res() res: Response,
     ) {
-        this.logger.log(`[POST] solicitud-acceso org=${organizacionId} user=${body.solicitanteUuid}`);
-        const result = await this.repo.crear({
-            organizacionId,
-            solicitanteUuid: body.solicitanteUuid,
-            rolSolicitado: body.rolSolicitado,
-            mensaje: body.mensaje,
-        });
+        this.logger.log(`[POST] solicitud-acceso org=${organizacionUuid} user=${body.solicitanteUuid}`);
+        const result = await this.repo.crearPorUuid(organizacionUuid, body.solicitanteUuid, body.rolSolicitado, body.mensaje);
         return res.status(HttpStatus.CREATED).json(
             new ApiResponse(HttpStatus.CREATED, 'Solicitud de acceso creada. El administrador recibirá una notificación.', result),
         );
@@ -78,12 +75,12 @@ export class SolicitudAccesoController {
      */
     @Get(':id/solicitudes-acceso')
     async listar(
-        @Param('id', ParseIntPipe) organizacionId: number,
+        @Param('id', ParseUUIDPipe) organizacionUuid: string,
         @Query('estado') estado: string | undefined,
         @Res() res: Response,
     ) {
-        this.logger.log(`[GET] solicitudes-acceso org=${organizacionId} estado=${estado ?? 'all'}`);
-        const data = await this.repo.listarPorOrganizacion(organizacionId, estado);
+        this.logger.log(`[GET] solicitudes-acceso org=${organizacionUuid} estado=${estado ?? 'all'}`);
+        const data = await this.repo.listarPorOrganizacion(organizacionUuid, estado);
         return res.status(HttpStatus.OK).json(
             new ApiResponse(HttpStatus.OK, 'Solicitudes obtenidas', data),
         );

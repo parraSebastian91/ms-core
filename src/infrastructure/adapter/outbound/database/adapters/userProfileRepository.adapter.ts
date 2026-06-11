@@ -20,13 +20,10 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
 
     async getUserProfile(uuid: string): Promise<UserProfileModel | null> {
-        const configuredSchema = (this.dataSource.options as { schema?: string }).schema || "public";
-        const schema = configuredSchema.replace(/"/g, '""');
-
-        const query = `select 
-                        u.userName as username,
+        const query = `SELECT
+                        u.userName                  AS username,
                         u.usuario_uuid,
-                        u.created_at as "ingreso",
+                        u.created_at                AS "ingreso",
                         u.activo,
                         c.nombres,
                         c.apellido_paterno,
@@ -38,13 +35,28 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         c.redes_sociales,
                         c.tipo_documento,
                         c.numero_documento,
-                        tc.nombre as "tipo_contacto"
-                        from 
-                            "${schema}".usuario u left join "${schema}".contacto c 
-                                on u.contacto_id = c.contacto_id 
-                            left join "${schema}".tipo_contacto tc 
-                                on c.tipo_contacto_id = tc.tipo_contacto_id 
-                        where u.usuario_uuid = $1`;
+                        tc.nombre                   AS "tipo_contacto",
+                       COALESCE(
+                            ARRAY_AGG(r.codigo ORDER BY r.codigo )
+                            FILTER (WHERE r.codigo IS NOT NULL),
+                            '{}'::text[]
+                        )                          AS roles
+                        FROM core.usuario u
+                        LEFT JOIN core.contacto c
+                            ON u.contacto_id = c.contacto_id
+                        LEFT JOIN core.tipo_contacto tc
+                            ON c.tipo_contacto_id = tc.tipo_contacto_id
+                        LEFT JOIN core.usuario_rol ur
+                            ON ur.usuario_id = u.usuario_id
+                        LEFT JOIN core.rol r
+                            ON r.rol_id = ur.rol_id
+                        WHERE u.usuario_uuid = $1
+                        GROUP BY
+                            u.userName, u.usuario_uuid, u.created_at, u.activo,
+                            c.nombres, c.apellido_paterno, c.apellido_materno,
+                            c.direccion, c.celular, c.correo, c.fecha_nacimiento,
+                            c.redes_sociales, c.tipo_documento, c.numero_documento,
+                            tc.nombre`;
 
         const result = await this.dataSource.query(query, [uuid]);
 
@@ -54,7 +66,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
     }
 
     async GetSistema(uuid: string): Promise<any> {
-        
+
         const query = `SELECT
                         o.organizacion_uuid         AS organizacion_identity,
                         s.nombre                    AS nombre_sistema,

@@ -50,10 +50,12 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     async getRolMiembro(organizacionUUID: string, usuarioUuid: string): Promise<string | null> {
         const rows = await this.dataSource.query(
             `SELECT rol_codigo
-             FROM core.organizacion_miembro
-             WHERE organizacion_uuid = $1
-               AND usuario_uuid    = $2
-               AND activo          = true`,
+            FROM core.organizacion_miembro om 
+                    left join core.organizacion o 
+                        on o.organizacion_id = om.organizacion_id 
+             WHERE o.organizacion_uuid = $1
+               AND om.usuario_uuid    = $2
+               AND om.activo          = true`,
             [organizacionUUID, usuarioUuid],
         );
         return rows.length > 0 ? (rows[0].rol_codigo as string) : null;
@@ -76,10 +78,12 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
                rc.nombre                 AS rol_nombre,
                om.incorporado_en
              FROM core.organizacion_miembro om
+             left join core.organizacion o 
+                        on o.organizacion_id = om.organizacion_id 
              JOIN core.usuario u  ON u.usuario_uuid  = om.usuario_uuid
              JOIN core.contacto c ON c.contacto_id   = u.contacto_id
              JOIN core.organizacion_rol_catalog rc ON rc.codigo = om.rol_codigo
-             WHERE om.organizacion_uuid = $1
+             WHERE o.organizacion_uuid = $1
                AND om.activo = true
              ORDER BY rc.rol_id, c.apellido_paterno`,
             [organizacionUUID],
@@ -103,11 +107,13 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
         rolCodigo: string,
     ): Promise<{ ok: boolean }> {
         const result = await this.dataSource.query(
-            `UPDATE core.organizacion_miembro
+            `UPDATE core.organizacion_miembro om
              SET rol_codigo = $1
-             WHERE organizacion_uuid = $2
-               AND usuario_uuid    = $3
-               AND activo          = true`,
+             FROM core.organizacion o
+             WHERE o.organizacion_id = om.organizacion_id
+               AND o.organizacion_uuid = $2
+               AND om.usuario_uuid    = $3
+               AND om.activo          = true`,
             [rolCodigo, organizacionUUID, usuarioUuid],
         );
         const affected = result[1] as number;
@@ -120,11 +126,13 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
 
     async removerMiembro(organizacionUUID: string, usuarioUuid: string): Promise<{ ok: boolean }> {
         const result = await this.dataSource.query(
-            `UPDATE core.organizacion_miembro
+            `UPDATE core.organizacion_miembro om
              SET activo = false
-             WHERE organizacion_uuid = $1
-               AND usuario_uuid    = $2
-               AND activo          = true`,
+             FROM core.organizacion o
+             WHERE o.organizacion_id = om.organizacion_id
+               AND o.organizacion_uuid = $1
+               AND om.usuario_uuid    = $2
+               AND om.activo          = true`,
             [organizacionUUID, usuarioUuid],
         );
         const affected = result[1] as number;

@@ -97,22 +97,36 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
         };
     }
 
-    async listarPorOrganizacion(organizacionId: number, estado?: string): Promise<SolicitudRow[]> {
+    async listarPorOrganizacion(organizacionUuid: string, estado?: string): Promise<SolicitudRow[]> {
         // Expirar antes de consultar para que el panel muestre estados actualizados
         await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
 
         const rows = await this.dataSource.query(
             `SELECT
-               solicitud_id, organizacion_id, organizacion_nombre, organizacion_rut,
-               solicitante_uuid, solicitante_nombre, solicitante_apellido, solicitante_email,
-               rol_solicitado, mensaje, token, estado,
-               resuelto_por, resuelto_en, motivo_rechazo,
-               creado_en, expira_en, esta_expirada
-             FROM core.v_solicitudes_acceso
-             WHERE organizacion_id = $1
-               AND ($2::text IS NULL OR estado = $2)
-             ORDER BY creado_en DESC`,
-            [organizacionId, estado ?? null],
+               sa.solicitud_id, 
+               o.organizacion_id, 
+               o.razon_social as organizacion_nombre, 
+               o.rut as organizacion_rut,
+               sa.solicitante_uuid, 
+               sa.solicitante_nombre, 
+               sa.solicitante_apellido, 
+               sa.solicitante_email,
+               sa.rol_solicitado, 
+               sa.mensaje, 
+               sa.token, 
+               sa.estado,
+               sa.resuelto_por, 
+               sa.resuelto_en, 
+               sa.motivo_rechazo,
+               sa.creado_en, 
+               sa.expira_en, 
+               sa.esta_expirada
+             FROM core.v_solicitudes_acceso sa
+                left JOIN core.organizacion o ON o.organizacion_id = sa.organizacion_id
+             WHERE o.organizacion_uuid = $1
+               AND ($2::text IS NULL OR sa.estado = $2)
+             ORDER BY sa.creado_en DESC`,
+            [organizacionUuid, estado ?? null],
         );
         return rows.map(this.mapRow);
     }

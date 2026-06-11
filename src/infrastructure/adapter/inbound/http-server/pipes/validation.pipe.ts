@@ -11,7 +11,7 @@ export class ValidationPipe implements PipeTransform<any> {
     }
     const object = plainToInstance(metatype, value);
     this.logger.debug(`Validating object: ${JSON.stringify(object)}`);
-    const errors = await validate(object);
+    const errors = await validate(object, { forbidUnknownValues: false });
     if (errors.length > 0) {
       this.logger.debug(`Validation errors: ${JSON.stringify(errors)}`);
       const messages = errors.map(err => Object.values(err.constraints)).join(', ');

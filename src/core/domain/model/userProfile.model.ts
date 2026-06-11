@@ -14,6 +14,8 @@ export class UserProfileModel {
     tipo_documento: string;
     numero_documento: string;
     tipo_contacto: string;
+    /** Roles del sistema asignados al usuario (ej. ['ADMIN', 'OPERADOR']) */
+    roles: string[];
 
     constructor(
     ) {
@@ -31,6 +33,7 @@ export class UserProfileModel {
         this.tipo_documento = "";
         this.numero_documento = "";
         this.tipo_contacto = "";
+        this.roles = [];
     }
 
     static fromData(row: any): UserProfileModel {   
@@ -51,6 +54,7 @@ export class UserProfileModel {
         userProfile.tipo_documento = row.tipo_documento;
         userProfile.numero_documento = row.numero_documento;
         userProfile.tipo_contacto = row.tipo_contacto;
+        userProfile.roles = Array.isArray(row.roles) ? row.roles : [];
         return userProfile;
     }
 }
