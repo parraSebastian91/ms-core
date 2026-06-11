@@ -38,7 +38,7 @@ export interface GrupoRow {
 }
 
 export interface CrearGrupoInput {
-    organizacionId: number;
+    organizacionUUID: string;
     nombre: string;
     descripcion?: string;
     liderUuid: string;
@@ -47,7 +47,8 @@ export interface CrearGrupoInput {
 // ── Interfaz principal ────────────────────────────────────────────────────────
 
 export interface OrgBasicData {
-    id: number;
+    organizacionID: number;
+    organizacionUUID: string;
     razonSocial: string;
     descripcion: string | null;
     logoUrl: string | null;
@@ -57,16 +58,16 @@ export interface OrgBasicData {
 
 export interface IOrganizacionAdminRepository {
     // ── Datos básicos de la organización ───────────────────────────────────
-    getOrganizacionById(organizacionId: number): Promise<OrgBasicData | null>;
-    getRolMiembro(organizacionId: number, usuarioUuid: string): Promise<string | null>;
+    getOrganizacionById(organizacionUUID: string): Promise<OrgBasicData | null>;
+    getRolMiembro(organizacionUUID: string, usuarioUuid: string): Promise<string | null>;
 
     // ── Miembros de la organización ─────────────────────────────────────────
-    listarMiembros(organizacionId: number): Promise<OrgMiembroRow[]>;
-    cambiarRolMiembro(organizacionId: number, usuarioUuid: string, rolCodigo: string): Promise<{ ok: boolean }>;
-    removerMiembro(organizacionId: number, usuarioUuid: string): Promise<{ ok: boolean }>;
+    listarMiembros(organizacionUUID: string): Promise<OrgMiembroRow[]>;
+    cambiarRolMiembro(organizacionUUID: string, usuarioUuid: string, rolCodigo: string): Promise<{ ok: boolean }>;
+    removerMiembro(organizacionUUID: string, usuarioUuid: string): Promise<{ ok: boolean }>;
 
     // ── Grupos de trabajo ───────────────────────────────────────────────────
-    listarGrupos(organizacionId: number): Promise<GrupoRow[]>;
+    listarGrupos(organizacionUUID: string): Promise<GrupoRow[]>;
     crearGrupo(input: CrearGrupoInput): Promise<GrupoRow>;
     actualizarGrupo(grupoId: string, nombre: string, descripcion?: string): Promise<{ ok: boolean }>;
     eliminarGrupo(grupoId: string): Promise<{ ok: boolean }>;
@@ -78,7 +79,7 @@ export interface IOrganizacionAdminRepository {
      *  El llamador puede enviarlo por email. El colaborador usa el token para
      *  completar el registro sin pasar por la cola de aprobación. */
     generarTokenEnrolamiento(
-        organizacionId: number,
+        organizacionUUID: string,
         adminUuid: string,
         rolDestino?: string,
     ): Promise<{ token: string; expiraEn: string }>;

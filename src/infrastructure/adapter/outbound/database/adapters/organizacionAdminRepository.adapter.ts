@@ -27,33 +27,34 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     // DATOS BÁSICOS DE LA ORG
     // ─────────────────────────────────────────────────────────────────────────
 
-    async getOrganizacionById(organizacionId: number): Promise<OrgBasicData | null> {
+    async getOrganizacionById(organizacionUUID: string): Promise<OrgBasicData | null> {
         const rows = await this.dataSource.query(
-            `SELECT organizacion_id, razon_social, descripcion, rut, dv
+            `SELECT organizacion_id, razon_social, giro, rut, dv
              FROM core.organizacion
-             WHERE organizacion_id = $1 AND activo = true`,
-            [organizacionId],
+             WHERE organizacion_uuid = $1 AND activo = true`,
+            [organizacionUUID],
         );
         if (rows.length === 0) return null;
         const r = rows[0];
         return {
-            id: Number(r.organizacion_id),
+            organizacionID: Number(r.organizacion_id),
+            organizacionUUID: organizacionUUID,
             razonSocial: r.razon_social,
-            descripcion: r.descripcion ?? null,
+            descripcion: r.giro ?? null,
             logoUrl: null, // TODO: obtener desde MinIO cuando esté disponible
             rut: r.rut,
             dv: r.dv,
         };
     }
 
-    async getRolMiembro(organizacionId: number, usuarioUuid: string): Promise<string | null> {
+    async getRolMiembro(organizacionUUID: string, usuarioUuid: string): Promise<string | null> {
         const rows = await this.dataSource.query(
             `SELECT rol_codigo
              FROM core.organizacion_miembro
-             WHERE organizacion_id = $1
+             WHERE organizacion_uuid = $1
                AND usuario_uuid    = $2
                AND activo          = true`,
-            [organizacionId, usuarioUuid],
+            [organizacionUUID, usuarioUuid],
         );
         return rows.length > 0 ? (rows[0].rol_codigo as string) : null;
     }
@@ -62,7 +63,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     // MIEMBROS
     // ─────────────────────────────────────────────────────────────────────────
 
-    async listarMiembros(organizacionId: number): Promise<OrgMiembroRow[]> {
+    async listarMiembros(organizacionUUID: string): Promise<OrgMiembroRow[]> {
         const rows = await this.dataSource.query(
             `SELECT
                om.miembro_id,
@@ -78,10 +79,10 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
              JOIN core.usuario u  ON u.usuario_uuid  = om.usuario_uuid
              JOIN core.contacto c ON c.contacto_id   = u.contacto_id
              JOIN core.organizacion_rol_catalog rc ON rc.codigo = om.rol_codigo
-             WHERE om.organizacion_id = $1
+             WHERE om.organizacion_uuid = $1
                AND om.activo = true
              ORDER BY rc.rol_id, c.apellido_paterno`,
-            [organizacionId],
+            [organizacionUUID],
         );
         return rows.map((r: any): OrgMiembroRow => ({
             miembroId: Number(r.miembro_id),
@@ -97,40 +98,40 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     }
 
     async cambiarRolMiembro(
-        organizacionId: number,
+        organizacionUUID: string,
         usuarioUuid: string,
         rolCodigo: string,
     ): Promise<{ ok: boolean }> {
         const result = await this.dataSource.query(
             `UPDATE core.organizacion_miembro
              SET rol_codigo = $1
-             WHERE organizacion_id = $2
+             WHERE organizacion_uuid = $2
                AND usuario_uuid    = $3
                AND activo          = true`,
-            [rolCodigo, organizacionId, usuarioUuid],
+            [rolCodigo, organizacionUUID, usuarioUuid],
         );
         const affected = result[1] as number;
         if (affected === 0) {
             throw new NotFoundException('Miembro no encontrado en la organización.');
         }
-        this.logger.log(`[cambiarRol] org=${organizacionId} user=${usuarioUuid} rol=${rolCodigo}`);
+        this.logger.log(`[cambiarRol] org=${organizacionUUID} user=${usuarioUuid} rol=${rolCodigo}`);
         return { ok: true };
     }
 
-    async removerMiembro(organizacionId: number, usuarioUuid: string): Promise<{ ok: boolean }> {
+    async removerMiembro(organizacionUUID: string, usuarioUuid: string): Promise<{ ok: boolean }> {
         const result = await this.dataSource.query(
             `UPDATE core.organizacion_miembro
              SET activo = false
-             WHERE organizacion_id = $1
+             WHERE organizacion_uuid = $1
                AND usuario_uuid    = $2
                AND activo          = true`,
-            [organizacionId, usuarioUuid],
+            [organizacionUUID, usuarioUuid],
         );
         const affected = result[1] as number;
         if (affected === 0) {
             throw new NotFoundException('Miembro no encontrado o ya removido.');
         }
-        this.logger.log(`[removerMiembro] org=${organizacionId} user=${usuarioUuid}`);
+        this.logger.log(`[removerMiembro] org=${organizacionUUID} user=${usuarioUuid}`);
         return { ok: true };
     }
 
@@ -139,13 +140,13 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     // ─────────────────────────────────────────────────────────────────────────
 
     /** Resuelve el organizacion_uuid a partir del organizacion_id BIGINT */
-    private async resolveOrgUuid(organizacionId: number): Promise<string> {
+    private async resolveOrgid(organizacionUUID: string): Promise<number> {
         const rows = await this.dataSource.query(
-            `SELECT organizacion_uuid FROM core.organizacion WHERE organizacion_id = $1`,
-            [organizacionId],
+            `SELECT organizacion_id FROM core.organizacion WHERE organizacion_uuid = $1`,
+            [organizacionUUID],
         );
         if (rows.length === 0) throw new NotFoundException('Organización no encontrada.');
-        return rows[0].organizacion_uuid as string;
+        return rows[0].organizacion_id as number;
     }
 
     private async fetchGrupoMiembros(grupoId: string): Promise<GrupoMiembroRow[]> {
@@ -174,8 +175,8 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
         }));
     }
 
-    async listarGrupos(organizacionId: number): Promise<GrupoRow[]> {
-        const orgUuid = await this.resolveOrgUuid(organizacionId);
+    async listarGrupos(organizacionUUID: string): Promise<GrupoRow[]> {
+        // const orgUuid = await this.resolveOrgUuid(organizacionId);
 
         const rows = await this.dataSource.query(
             `SELECT
@@ -193,7 +194,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
              WHERE gt.organizacion_id = $1
                AND gt.activo          = true
              ORDER BY gt.nombre`,
-            [orgUuid],
+            [organizacionUUID],
         );
 
         const grupos: GrupoRow[] = [];
@@ -215,14 +216,13 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     }
 
     async crearGrupo(input: CrearGrupoInput): Promise<GrupoRow> {
-        const orgUuid = await this.resolveOrgUuid(input.organizacionId);
 
         const rows = await this.dataSource.query(
             `INSERT INTO core.grupo_trabajo
                (nombre, descripcion, lider_usuario_uuid, organizacion_id, activo, grupo_metadata)
              VALUES ($1, $2, $3, $4, true, '{}')
              RETURNING grupo_id, nombre, descripcion, lider_usuario_uuid, activo, created_at`,
-            [input.nombre, input.descripcion ?? null, input.liderUuid, orgUuid],
+            [input.nombre, input.descripcion ?? null, input.liderUuid, input.organizacionUUID],
         );
         const g = rows[0];
 
@@ -320,10 +320,11 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
     // ─────────────────────────────────────────────────────────────────────────
 
     async generarTokenEnrolamiento(
-        organizacionId: number,
+        organizacionUUID: string,
         adminUuid: string,
         rolDestino = 'COLABORADOR',
     ): Promise<{ token: string; expiraEn: string }> {
+        const organizacionID = await this.resolveOrgid(organizacionUUID);
         // Se genera una solicitud "fantasma" con uuid=admin como solicitante inicial;
         // el destinatario la reclama con el token. Para simplicidad usamos la misma tabla.
         await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
@@ -334,7 +335,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
             `UPDATE core.organizacion_solicitud_acceso
              SET estado = 'CANCELADA'
              WHERE organizacion_id = $1 AND solicitante_uuid = $2 AND estado = 'PENDIENTE'`,
-            [organizacionId, adminUuid],
+            [organizacionID, adminUuid],
         );
 
         const rows = await this.dataSource.query(
@@ -342,9 +343,9 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
                (organizacion_id, solicitante_uuid, rol_solicitado, mensaje, estado)
              VALUES ($1, $2, $3, 'Código de enrolamiento generado por admin', 'PENDIENTE')
              RETURNING token, expira_en`,
-            [organizacionId, adminUuid, rolDestino],
+            [organizacionID, adminUuid, rolDestino],
         );
-        this.logger.log(`[generarToken] org=${organizacionId} admin=${adminUuid} rol=${rolDestino}`);
+        this.logger.log(`[generarToken] org=${organizacionID} admin=${adminUuid} rol=${rolDestino}`);
         return {
             token: rows[0].token as string,
             expiraEn: rows[0].expira_en as string,
