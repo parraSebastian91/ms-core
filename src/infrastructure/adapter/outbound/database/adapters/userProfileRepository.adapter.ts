@@ -155,43 +155,61 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
     }
 
     async getOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
-        const query = ` select 
-                            CONCAT(c.nombres, ' ',c.apellido_paterno, ' ', c.apellido_materno) as nombre_contacto,
+        const query = `WITH roles_priorizados AS (
+                            SELECT
+                                ur.usuario_id,
+                                r.codigo,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY ur.usuario_id
+                                    ORDER BY
+                                        CASE r.codigo
+                                            WHEN 'ADMIN_FINANCIADORA'    THEN 1
+                                            WHEN 'EJECUTIVO_FINANCIADORA' THEN 2
+                                            WHEN 'ADMIN_CEDENTE'          THEN 3
+                                            WHEN 'CLIENTE_CEDENTE'        THEN 4
+                                        END
+                                ) AS rn
+                            FROM core.usuario_rol ur
+                            JOIN core.rol r ON r.rol_id = ur.rol_id
+                            WHERE r.codigo IN (
+                                'CLIENTE_CEDENTE', 'ADMIN_CEDENTE',
+                                'EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA'
+                            )
+                        )
+                        SELECT
+                            CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_contacto,
                             u.usuario_uuid,
                             u.userName,
-                            gm.cargo_en_grupo as cargo,
+                            orc.nombre  AS cargo,
                             o.razon_social,
                             o.organizacion_uuid,
                             o.tipo_participante,
                             o.tipo_organizacion,
                             CASE
-                                WHEN o.tipo_participante = 'FINANCIADORA' 
-                                    AND r.codigo IN ('EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
+                                WHEN o.tipo_participante = 'FINANCIADORA'
+                                    AND rp.codigo IN ('EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
                                     THEN 'PORTAL_FINANCIADORA'
                                 WHEN o.tipo_participante = 'CEDENTE'
-                                    AND r.codigo IN ('CLIENTE_CEDENTE', 'ADMIN_CEDENTE')
+                                    AND rp.codigo IN ('CLIENTE_CEDENTE', 'ADMIN_CEDENTE')
                                     THEN 'PORTAL_CEDENTE'
-                                WHEN r.codigo IN ('SUPER_ADMIN', 'ADMIN')
-                                    THEN 'PORTAL_ADMIN'
                                 ELSE 'SIN_ACCESO'
                             END AS portal
-                        from 
-                            core.usuario u left join core.contacto c 
-                                on u.contacto_id = c.contacto_id 
-                            join core.grupo_miembro gm
-                                on gm.usuario_uuid = u.usuario_uuid and gm.active = true
-                            join core.grupo_trabajo gt
-                                on gm.grupo_id = gt.grupo_id and gt.activo = true
-                            join core.organizacion o
-                                on gt.organizacion_id = o.organizacion_uuid and o.activo = true
-                            join core.usuario_rol ur
-                                on ur.usuario_id = u.usuario_id
-                            join core.rol r
-                                on r.rol_id = ur.rol_id
-                        where u.usuario_uuid = $1
-                            and r.codigo IN ('CLIENTE_CEDENTE', 'ADMIN_CEDENTE','EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA')
-                            AND u.activo   = true
-                            AND o.activo   = true`;
+                        FROM core.usuario u
+                        JOIN core.contacto c
+                            ON u.contacto_id = c.contacto_id
+                        JOIN core.organizacion_miembro om
+                            ON u.usuario_uuid = om.usuario_uuid
+                        JOIN core.organizacion_rol_catalog orc
+                            ON orc.codigo = om.rol_codigo
+                        JOIN core.organizacion o
+                            ON om.organizacion_id = o.organizacion_id
+                            AND o.activo = true
+                        JOIN roles_priorizados rp
+                            ON rp.usuario_id = u.usuario_id
+                            AND rp.rn = 1          -- solo el rol de mayor jerarquía
+                        WHERE u.usuario_uuid = $1
+                            AND u.activo = true
+                            AND o.activo = true;`;
         const values = [uuid];
         const result = await this.dataSource.query<UserOrganizacionProfileModel[]>(query, values);
         if (!result[0]) {
