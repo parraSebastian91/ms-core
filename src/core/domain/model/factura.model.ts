@@ -37,7 +37,18 @@ export class Row {
     correlation_id: string;
     asset_id: string;
     created_by: createdBy;
+    adjuntos: Adjunto[];
     notas?: string[];
+}
+
+export class Adjunto {
+    id: string;
+    tipo: string;
+    orden: number;
+    asset_id: string;
+    url_path: string;
+    descripcion: string;
+    es_principal: boolean;
 }
 
 export class FacturaModel {
@@ -65,6 +76,7 @@ export class FacturaModel {
     url_factura: string | null;
     createdBy: createdBy;
     notas?: string[];
+    adjuntos?: Adjunto[];
     constructor(ownerUUID: string, gestor: { uuid: string, username: string }, status: facturaEstado, correlationId: string) {
         this.assetId = "";
         this.ownerUUID = ownerUUID;
@@ -115,6 +127,19 @@ export class FacturaModel {
         factura.createdBy = entity.created_by as createdBy;
         if (entity.notas) {
             factura.notas = entity.notas;
+        }
+        if (entity.adjuntos) {
+            factura.adjuntos = entity.adjuntos
+                .filter((adjunto: Adjunto) => adjunto ?? false)
+                .map((adjunto: any) => ({
+                    id: adjunto.id,
+                    tipo: adjunto.tipo,
+                    orden: adjunto.orden,
+                    asset_id: adjunto.asset_id,
+                    url_path: adjunto.url_path,
+                    descripcion: adjunto.descripcion,
+                    es_principal: adjunto.es_principal
+                }));
         }
         return factura;
     }

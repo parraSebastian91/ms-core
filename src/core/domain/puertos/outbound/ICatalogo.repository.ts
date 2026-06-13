@@ -51,4 +51,5 @@ export interface ICatalogoRepository {
     getComunas(provinciaId: number): Promise<ComunaRow[]>;
     getBancos(paisCodigo: string): Promise<BancoRow[]>;
     getProductosFinancieros(tipoOrg?: string): Promise<ProductoFinancieroRow[]>;
+    getMediaCategory(mediaType: string): Promise<{ codigo: number; nombre: string }[]>;
 }

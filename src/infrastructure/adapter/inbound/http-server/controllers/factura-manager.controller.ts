@@ -51,7 +51,7 @@ export class FacturaManagerController {
     }
 
     /**
-     * 
+     * Obtiene las facturas asociadas a un usuario y organización específica.
      * @param uuid Identificador de usuario
      * @returns 
      */

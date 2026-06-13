@@ -100,4 +100,19 @@ export class CatalogoRepositoryAdapter implements ICatalogoRepository {
             return [];
         }
     }
+
+    async getMediaCategory(mediaType: string): Promise<{ codigo: number; nombre: string }[]> {
+        try {
+            return await this.dataSource.query(
+                `SELECT codigo, nombre
+                 FROM media.categoria c 
+                 WHERE c.media_type = $1
+                 ORDER BY c.nombre`,
+                [mediaType.toUpperCase()],
+            );
+        } catch (error: any) {
+            this.logger.error(`Error getMediaCategory mediaType=${mediaType}: ${error?.message}`);
+            return [];
+        }
+    }
 }

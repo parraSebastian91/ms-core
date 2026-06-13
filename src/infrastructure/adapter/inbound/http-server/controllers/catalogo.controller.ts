@@ -95,5 +95,16 @@ export class CatalogoController {
             new ApiResponse(HttpStatus.OK, 'Productos financieros obtenidos', data),
         );
     }
-}
 
+    @Get('media-category/:mediaType')
+    async getMediaCategory(
+        @Param('mediaType') mediaType: string,
+        @Res() res: Response,
+    ) {
+        this.logger.log(`[GET] catalogo/media-category mediaType=${mediaType}`);
+        const data = await this.catalogoRepository.getMediaCategory(mediaType);
+        return res.status(HttpStatus.OK).json(
+            new ApiResponse(HttpStatus.OK, 'Media category obtenida', data),
+        );
+    }
+}
