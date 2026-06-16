@@ -115,18 +115,25 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         }
     }
 
-    async getFacturas(usuario: string, orgUUID: string, isLeader: boolean): Promise<FacturaModel[]> {
+    async getFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]> {
         this.logger.debug(`Obteniendo facturas para usuario: ${usuario}, organización: ${orgUUID}`);
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
-        const todasLasOrgs = orgUUID === 'Todas';
-        let params: any[] = [usuario, todasLasOrgs ? null : orgUUID];
+        let query = ``;
+        let params: any[] = [];
 
-        // Base
-        const query = `
-        SELECT * FROM permisos.obtener_facturas_accesibles($1,$2)`;
+        switch (filtro) {
+            case 'xorganizacion':
+                query += `SELECT * FROM permisos.obtener_facturas_accesibles($1,$2) WHERE cedente_org_id = $3 `;
+                params = [usuario, orgUUID, orgUUID];
+                break;
+            default:
+                query = `SELECT * FROM permisos.obtener_facturas_accesibles($1) `;
+                params = [usuario];
+                break;
+        }
+
         try {
             const result = await this.dataSource.query(query, params);
-            this.logger.debug(`Facturas obtenidas: ${JSON.stringify(result)}`);
             const facturas: FacturaModel[] = result.map((row: any) => FacturaModel.fromEntity(row)) || [];
 
             if (facturas.length > 0) {

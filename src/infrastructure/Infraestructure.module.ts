@@ -25,6 +25,9 @@ import { PermisosRepositoryAdapter } from './adapter/outbound/database/adapters/
 import { organizacionRepositoriAdapter } from './adapter/outbound/database/adapters/organizacionRepository.adapter';
 import { CatalogoRepositoryAdapter } from './adapter/outbound/database/adapters/catalogoRepository.adapter';
 import { CATALOGO_REPOSITORY } from 'src/core/domain/puertos/outbound/ICatalogo.repository';
+import { SolicitudAccesoRepositoryAdapter } from './adapter/outbound/database/adapters/solicitudAccesoRepository.adapter';
+import { VerificacionTributariaRepositoryAdapter } from './adapter/outbound/database/adapters/verificacionTributariaRepository.adapter';
+import { OrganizacionAdminRepositoryAdapter } from './adapter/outbound/database/adapters/organizacionAdminRepository.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -94,6 +97,9 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         StorageServiceAdapter,
         PermisosRepositoryAdapter,
         organizacionRepositoriAdapter,
+        OrganizacionAdminRepositoryAdapter,
+        SolicitudAccesoRepositoryAdapter,
+        VerificacionTributariaRepositoryAdapter,
         CatalogoRepositoryAdapter,
         {
             provide: CATALOGO_REPOSITORY,
@@ -161,7 +167,10 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         StorageServiceAdapter,
         PermisosRepositoryAdapter,
         organizacionRepositoriAdapter,
+        OrganizacionAdminRepositoryAdapter,
         CatalogoRepositoryAdapter,
+        SolicitudAccesoRepositoryAdapter,
+        VerificacionTributariaRepositoryAdapter,
         CATALOGO_REPOSITORY,
         STORAGE_SERVICE,
         ClientsModule

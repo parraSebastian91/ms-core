@@ -24,7 +24,7 @@ export interface IFacturaManager {
     ExecutePublishFactura(factura: FacturaModel): Promise<boolean>;
     ExecuteCargaDocumentoRespaldo(factura: FacturaModel, categoryProcess: string, resourceType: RESOURCE_TYPE, status: EVENT_CODES): Promise<boolean>;
     ExecutePublicarFormFactura(factura: FacturaModel): Promise<FacturaModel>;
-    ExecuteGetFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]>;
+    ExecuteGetFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]>;
     ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{ campo: string, id: string, valor: any, isUpdate: any, mensaje: string } | null>;
     ExecuteGetUrlFacturas(facturaID: string[], correlationId: string): Promise<{ id: string, keyUrl: string }[]>;
     ExecuteGetVersionTerminosActiva(): Promise<VersionTerminosRecord>;

@@ -12,6 +12,9 @@ import { IWorkTeamRepository } from './domain/puertos/outbound/IWorkTeam.rerposi
 import { IStorageService } from './domain/puertos/outbound/IStorageService.interface';
 import { IOrganizacionRepository } from './domain/puertos/outbound/IOrganizacion.repository';
 import { IPermisosManagerRepository } from './domain/puertos/outbound/IPermisosManager.repository';
+import { ISolicitudAccesoRepository } from './domain/puertos/outbound/ISolicitudAcceso.repository';
+import { TributaryService } from './application/service/tributary.service';
+import { IVerificacionTributariaRepository } from './domain/puertos/outbound/IVerificacionTributaria.repository';
 
 export type CoreModuleOptions = {
     modules: any[];
@@ -23,6 +26,9 @@ export type CoreModuleOptions = {
         StorageServiceAdapter: Type<IStorageService>;
         OrganizacionRepository: Type<IOrganizacionRepository>;
         PermisosManagerRepository: Type<IPermisosManagerRepository>;
+        SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
+        VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
+        TributaryService: Type<TributaryService>;
     }
 }
 
@@ -40,7 +46,10 @@ export class CoreModule {
             WorkTeamRepositoryAdapter,
             StorageServiceAdapter,
             OrganizacionRepository,
-            PermisosManagerRepository
+            PermisosManagerRepository,
+            SolicitudAccesoRepository,
+            VerificacionTributariaRepository,
+            TributaryService
         } = adapters;
 
         return {
@@ -58,7 +67,10 @@ export class CoreModule {
                         WorkTeamRepositoryAdapter,
                         StorageServiceAdapter,
                         OrganizacionRepository,
-                        PermisosManagerRepository
+                        PermisosManagerRepository,
+                        SolicitudAccesoRepository,
+                        VerificacionTributariaRepository,
+                        TributaryService
                     }
                 })
             ],

@@ -73,6 +73,6 @@ export class CrearOrganizacionDto {
             .setFormatoRut(org.rut)
             .setTipoOrganizacion(org.tipoPersona)
             .setTipoParticipante(org.tipoParticipacion)
-            .build();;
+            .build();
     }
 }

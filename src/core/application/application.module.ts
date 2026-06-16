@@ -17,6 +17,11 @@ import { IOrganizacionRepository } from '../domain/puertos/outbound/IOrganizacio
 import { IPermisosManagerRepository } from '../domain/puertos/outbound/IPermisosManager.repository';
 import { FacturaServiceImplement } from './service/factura.service';
 import { PermisosService } from './service/permisos.service';
+import { AccesoOrganizacionUseCase } from './usesCase/organizacion/acceso.usecase';
+import { ISolicitudAccesoRepository } from '../domain/puertos/outbound/ISolicitudAcceso.repository';
+import { OrganizacionUseCase } from './usesCase/organizacion/organizacion.usecase';
+import { TributaryService } from './service/tributary.service';
+import { IVerificacionTributariaRepository } from '../domain/puertos/outbound/IVerificacionTributaria.repository';
 
 export type ApplicationModuleOptions = {
     modules: any[];
@@ -28,14 +33,19 @@ export type ApplicationModuleOptions = {
         StorageServiceAdapter: Type<IStorageService>;
         OrganizacionRepository: Type<IOrganizacionRepository>;
         PermisosManagerRepository: Type<IPermisosManagerRepository>;
+        SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
+        VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
+        TributaryService: Type<TributaryService>;
     }
 }
 
 export const USER_PROFILE_USE_CASE = 'USER_PROFILE_USE_CASE';
 export const FACTURA_MANAGER_USE_CASE = 'FACTURA_MANAGER_USE_CASE';
+export const SOLICITUD_ACCESO_USECASE = 'SOLICITUD_ACCESO_USECASE';
+export const ORGANIZACION_USECASE = 'ORGANIZACION_USECASE';
+
 export const PERMISOS_SERVICE = 'PERMISOS_SERVICE';
 export const FACTURA_SERVICE = 'FACTURA_SERVICE';
-
 
 @Module({})
 export class ApplicationModule {
@@ -49,7 +59,10 @@ export class ApplicationModule {
             WorkTeamRepositoryAdapter,
             StorageServiceAdapter,
             OrganizacionRepository,
-            PermisosManagerRepository
+            PermisosManagerRepository,
+            VerificacionTributariaRepository,
+            SolicitudAccesoRepository,
+            TributaryService
         } = adapters;
 
 
@@ -120,11 +133,58 @@ export class ApplicationModule {
             }
         };
 
+        const SolicitudAccesoUseCaseProvider = {
+            provide: SOLICITUD_ACCESO_USECASE,
+            inject: [SolicitudAccesoRepository],
+            useFactory: (
+                solicitudAccesoRepository: ISolicitudAccesoRepository
+            ) => {
+                return new AccesoOrganizacionUseCase(solicitudAccesoRepository);
+            }
+        };
+
+        const TributaryServiceProvider = {
+            provide: TributaryService,
+            inject: [VerificacionTributariaRepository],
+            useFactory: (verificacionRepo: IVerificacionTributariaRepository) => {
+                return new TributaryService(verificacionRepo);
+            }
+        };
+
+        const OrganizacionUseCaseProvider = {
+            provide: ORGANIZACION_USECASE,
+            imports: [ConfigModule],
+            inject: [OrganizacionRepository, TributaryService, VerificacionTributariaRepository, SolicitudAccesoRepository],
+            useFactory: (
+                organizacionRepository: IOrganizacionRepository,
+                tributaryService: TributaryService,
+                verificacionRepo: IVerificacionTributariaRepository,
+                solicitudAccesoRepo: ISolicitudAccesoRepository
+            ) => {
+                return new OrganizacionUseCase(organizacionRepository, tributaryService, verificacionRepo, solicitudAccesoRepo);
+            }
+        };
+
         return {
             module: ApplicationModule,
             imports: [...modules],
-            providers: [UserProfileUseCaseProvider, PermisosServiceProvider, FacturaServiceProvider, FacturaManagerUseCaseProvider],
-            exports: [USER_PROFILE_USE_CASE, FACTURA_MANAGER_USE_CASE, PERMISOS_SERVICE, FACTURA_SERVICE]
+            providers: [
+                UserProfileUseCaseProvider,
+                PermisosServiceProvider,
+                FacturaServiceProvider,
+                FacturaManagerUseCaseProvider,
+                SolicitudAccesoUseCaseProvider,
+                TributaryServiceProvider,
+                OrganizacionUseCaseProvider
+            ],
+            exports: [
+                USER_PROFILE_USE_CASE,
+                FACTURA_MANAGER_USE_CASE,
+                PERMISOS_SERVICE,
+                FACTURA_SERVICE,
+                SOLICITUD_ACCESO_USECASE,
+                ORGANIZACION_USECASE
+            ]
         }
 
     }

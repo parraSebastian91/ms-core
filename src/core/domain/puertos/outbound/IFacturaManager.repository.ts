@@ -10,7 +10,7 @@ export interface IFacturaManagerRepository {
      * @returns Id del recurso inserrtado en Base de datos
      */
     publishFactura(factura: FacturaModel): Promise<string>;
-    getFacturas(usuario: string, orgUUID: string, isLeader: boolean): Promise<FacturaModel[]>;
+    getFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]>;
     getFacturaByID(facturaID: string): Promise<FacturaModel | null>;
     validateFacturaEditable(facturaID: string): Promise<boolean>;
     updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null>;

@@ -226,12 +226,11 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                             u.usuario_uuid,
                             o.organizacion_uuid
                         from 
-                            core.usuario u join core.grupo_miembro gm
-                                on gm.usuario_uuid = u.usuario_uuid and gm.active = true
-                            join core.grupo_trabajo gt
-                                on gm.grupo_id = gt.grupo_id and gt.activo = true
+                            core.usuario u join 
+                            core.organizacion_miembro om 
+                                on u.usuario_uuid = om.usuario_uuid 
                             join core.organizacion o
-                                on gt.organizacion_id = o.organizacion_uuid and o.activo = true
+                                on o.organizacion_id = om.organizacion_id  and o.activo = true
                         where 
                         ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $1
                         and o.organizacion_uuid = $2`;

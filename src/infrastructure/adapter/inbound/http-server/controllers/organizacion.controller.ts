@@ -9,6 +9,7 @@ import {
     ParseIntPipe,
     Post,
     Query,
+    Req,
     Res,
     UseFilters,
 } from '@nestjs/common';
@@ -16,15 +17,16 @@ import type { Response } from 'express';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { ApiResponse } from '../model/api-response.model';
 import { Public } from '../decorators/public.decorator';
-import { IOrganizacionAdministrator, ORGANIZACION_USECASE } from 'src/core/domain/puertos/inbound/IOrganizacionAdministrator';
+import { IOrganizacionAdministrator } from 'src/core/domain/puertos/inbound/IOrganizacionAdministrator';
 import { CrearOrganizacionDto, GuardarVerificacionDto } from '../model/dto/organizacion.dto';
 import { OrganizacionModel } from 'src/core/domain/model/organizacion.model';
+import { ORGANIZACION_USECASE } from 'src/core/application/application.module';
+import { Permissions } from '../decorators/permissions.decorator';
 
 
 
 @Controller('organizacion')
 @UseFilters(CoreExceptionFilter)
-@Public()
 export class OrganizacionController {
 
     private readonly logger = new Logger(OrganizacionController.name);
@@ -39,8 +41,10 @@ export class OrganizacionController {
      * Idempotente: si ya existe el RUT retorna el registro existente.
      */
     @Post()
+    @Permissions('ORG_CREATE')
     async crearOrganizacion(
-        @Body() body: CrearOrganizacionDto,
+        @Body() body: any, //CrearOrganizacionDto
+        @Req() req: Request,
         @Res() res: Response,
     ) {
         this.logger.log(`[POST] /organizacion razonSocial=${body.razonSocial} rut=${body.rut}`);
@@ -51,9 +55,12 @@ export class OrganizacionController {
             .setRut(body.rut)
             .setTipoParticipante(body.tipoParticipacion)
             .setGiros(body.giros ?? [])
+            .setRawSii(body.rawSii ?? null)
             .build();
-            
-        const result = await this.organizacionUseCase.createOrganizacion(orgModel);
+
+        const usuario = req['user'] || null;
+        console.log("Usuario en request:", usuario);
+        const result = await this.organizacionUseCase.createOrganizacion(orgModel, usuario);
         const status = HttpStatus.CREATED;
         return res.status(status).json(
             new ApiResponse(status, 'Organización creada', result),

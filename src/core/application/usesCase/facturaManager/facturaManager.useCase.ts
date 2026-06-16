@@ -243,16 +243,8 @@ export class FacturaManagerUseCase implements IFacturaManager {
         return factura;
     }
 
-    async ExecuteGetFacturas(usuario: string, orgUUID: string): Promise<FacturaModel[]> {
-        let isLeader = await this.workTeamRepository.isLeaderOfWorkTeam(usuario, orgUUID);
-        if (orgUUID !== "Todas") {
-            const validateUserAndOrganizacion = await this.userProfileRepository.validateUserAndOrganizacion(usuario, orgUUID);
-            if (!validateUserAndOrganizacion) {
-                this.logger.error(`Error de validación de usuario y organización para consulta de facturas, usuario: ${usuario}, organización: ${orgUUID}`);
-                throw new UserAndOrgError("Error de validación de usuario y organización");
-            }
-        }
-        return await this.facturaRepository.getFacturas(usuario, orgUUID, isLeader);
+    async ExecuteGetFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]> {
+        return await this.facturaRepository.getFacturas(usuario, orgUUID,  filtro);
     }
 
     async ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{ campo: string, id: string, valor: any, isUpdate: any, mensaje: string }> {

@@ -21,6 +21,7 @@ export class TributaryModel {
     constructor() { }
 
     static fromRaw(raw: any, type: string): TributaryModel {
+        console.log(raw);
         const model = new TributaryModel();
         const parseFechaChile = (fecha: string | null | undefined): Date | null => {
             if (!fecha) return null;

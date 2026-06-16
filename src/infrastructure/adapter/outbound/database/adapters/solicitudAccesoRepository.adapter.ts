@@ -17,19 +17,7 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
         private readonly dataSource: DataSource,
     ) { }
 
-    async crear(input: CrearSolicitudInput): Promise<{ solicitudId: number; token: string; expiraEn: string }> {
-        // Expirar pendientes antiguas antes de crear una nueva
-        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
-
-        // Verificar que no haya una solicitud PENDIENTE activa
-        const existing = await this.dataSource.query(
-            `SELECT solicitud_id FROM core.organizacion_solicitud_acceso
-             WHERE organizacion_id = $1 AND solicitante_uuid = $2 AND estado = 'PENDIENTE'`,
-            [input.organizacionId, input.solicitanteUuid],
-        );
-        if (existing.length > 0) {
-            throw new ConflictException('Ya tienes una solicitud de acceso pendiente para esta organización.');
-        }
+    async crearSolicitud(input: CrearSolicitudInput): Promise<{ solicitudId: number; token: string; expiraEn: string }> {
 
         const rows = await this.dataSource.query(
             `INSERT INTO core.organizacion_solicitud_acceso
@@ -51,6 +39,20 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
             token: row.token,
             expiraEn: row.expira_en,
         };
+    }
+
+    async existenSolicitudesPendientes(organizacionUUID: string, solicitanteUuid: string): Promise<{ orgId: number, existe: boolean }> {
+        const existing = await this.dataSource.query(
+            `SELECT o.organizacion_id , COUNT(*) > 0 as existe
+                FROM core.organizacion_solicitud_acceso s
+                JOIN core.organizacion o ON o.organizacion_id = s.organizacion_id
+            WHERE o.organizacion_uuid = $1::uuid
+               AND s.solicitante_uuid = $2::uuid
+               AND s.estado = 'PENDIENTE'
+            group by o.organizacion_id`,
+            [organizacionUUID, solicitanteUuid],
+        );
+        return { orgId: existing.length > 0 ? existing[0].organizacion_id : null, existe: existing.length > 0 };
     }
 
     async crearPorUuid(
@@ -98,9 +100,6 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
     }
 
     async listarPorOrganizacion(organizacionUuid: string, estado?: string): Promise<SolicitudRow[]> {
-        // Expirar antes de consultar para que el panel muestre estados actualizados
-        await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
-
         const rows = await this.dataSource.query(
             `SELECT
                sa.solicitud_id, 
@@ -131,7 +130,7 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
         return rows.map(this.mapRow);
     }
 
-    async obtenerPorToken(token: string): Promise<SolicitudRow | null> {
+    async getSolicitudPorToken(token: string): Promise<SolicitudRow | null> {
         await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
         const rows = await this.dataSource.query(
             `SELECT * FROM core.v_solicitudes_acceso WHERE token = $1`,
@@ -140,40 +139,35 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
         return rows.length > 0 ? this.mapRow(rows[0]) : null;
     }
 
-    async resolver(input: ResolverSolicitudInput): Promise<{ ok: boolean }> {
+    async marcarSolicitudesExpiradas(): Promise<void> {
         await this.dataSource.query(`SELECT core.fn_marcar_solicitudes_expiradas()`);
+    }
 
-        const solicitud = await this.obtenerPorToken(input.token);
-        if (!solicitud) {
-            throw new NotFoundException('Solicitud no encontrada o token inválido.');
-        }
-        if (solicitud.estado !== 'PENDIENTE') {
-            throw new ConflictException(`La solicitud ya fue ${solicitud.estado.toLowerCase()}.`);
-        }
-
-        await this.dataSource.query(
+    async solveSolicitud(input: ResolverSolicitudInput): Promise<{ ok: boolean }> {
+        const afected = await this.dataSource.query(
             `UPDATE core.organizacion_solicitud_acceso
              SET estado = $1, resuelto_por = $2, resuelto_en = now(), motivo_rechazo = $3
              WHERE token = $4`,
             [input.decision, input.adminUuid, input.motivoRechazo ?? null, input.token],
         );
+        if (afected.length === 0) {
+            throw new NotFoundException('Solicitud no encontrada o token inválido.');
+        }
+        return { ok: true };
+    }
 
-        // Si se aprueba, insertar en organizacion_miembro
-        if (input.decision === 'APROBADA') {
-            await this.dataSource.query(
-                `INSERT INTO core.organizacion_miembro
+    async asociarUsuarioAOrganizacion(organizacionID: number, solicitanteUUID: string, rolCodigo: string, adminUUID: string): Promise<void> {
+        await this.dataSource.query(
+            `INSERT INTO core.organizacion_miembro
                    (organizacion_id, usuario_uuid, rol_codigo, incorporado_por)
                  VALUES ($1, $2, $3, $4)
                  ON CONFLICT (organizacion_id, usuario_uuid)
                    DO UPDATE SET activo = true, rol_codigo = EXCLUDED.rol_codigo,
                                  incorporado_por = EXCLUDED.incorporado_por,
                                  incorporado_en = now()`,
-                [solicitud.organizacionId, solicitud.solicitanteUuid, solicitud.rolSolicitado, input.adminUuid],
-            );
-            this.logger.log(`[resolver] APROBADA org=${solicitud.organizacionId} user=${solicitud.solicitanteUuid}`);
-        }
-
-        return { ok: true };
+            [organizacionID, solicitanteUUID, rolCodigo, adminUUID],
+        );
+        this.logger.log(`[resolver] APROBADA org=${organizacionID} user=${solicitanteUUID} rol=${rolCodigo} admin=${adminUUID}`);
     }
 
     async cancelar(solicitudId: number, solicitanteUuid: string): Promise<{ ok: boolean }> {
@@ -192,24 +186,24 @@ export class SolicitudAccesoRepositoryAdapter implements ISolicitudAccesoReposit
 
     private mapRow(r: any): SolicitudRow {
         return {
-            solicitudId:        Number(r.solicitud_id),
-            organizacionId:     Number(r.organizacion_id),
+            solicitudId: Number(r.solicitud_id),
+            organizacionId: Number(r.organizacion_id),
             organizacionNombre: r.organizacion_nombre,
-            organizacionRut:    r.organizacion_rut,
-            solicitanteUuid:    r.solicitante_uuid,
-            solicitanteNombre:  r.solicitante_nombre,
-            solicitanteApellido:r.solicitante_apellido,
-            solicitanteEmail:   r.solicitante_email,
-            rolSolicitado:      r.rol_solicitado,
-            mensaje:            r.mensaje,
-            token:              r.token,
-            estado:             r.estado,
-            resueltoPor:        r.resuelto_por,
-            resueltoEn:         r.resuelto_en,
-            motivoRechazo:      r.motivo_rechazo,
-            creadoEn:           r.creado_en,
-            expiraEn:           r.expira_en,
-            estaExpirada:       r.esta_expirada,
+            organizacionRut: r.organizacion_rut,
+            solicitanteUuid: r.solicitante_uuid,
+            solicitanteNombre: r.solicitante_nombre,
+            solicitanteApellido: r.solicitante_apellido,
+            solicitanteEmail: r.solicitante_email,
+            rolSolicitado: r.rol_solicitado,
+            mensaje: r.mensaje,
+            token: r.token,
+            estado: r.estado,
+            resueltoPor: r.resuelto_por,
+            resueltoEn: r.resuelto_en,
+            motivoRechazo: r.motivo_rechazo,
+            creadoEn: r.creado_en,
+            expiraEn: r.expira_en,
+            estaExpirada: r.esta_expirada,
         };
     }
 }

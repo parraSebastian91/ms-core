@@ -55,17 +55,18 @@ export class FacturaManagerController {
      * @param uuid Identificador de usuario
      * @returns 
      */
-    @Get("list/:usuario/:orgUUID")
+    @Get("list/:usuario/:orgUUID/:filtro")
     @Permissions(permisosControlador.VER_FACTURA, permisosControlador.READ_ONLY)
     async getFacturas(
         @Param("usuario") usuario: string,
         @Param("orgUUID") orgUUID: string,
+        @Param("filtro") filtro: string,
         @Res() response: Response
     ) {
         const initDAte = new Date();
         this.logger.log(`[START] getFacturas `);
 
-        const facturas = await this.facturaManager.ExecuteGetFacturas(usuario, orgUUID);
+        const facturas = await this.facturaManager.ExecuteGetFacturas(usuario, orgUUID, filtro);
         const endDate = new Date();
         const duration = endDate.getTime() - initDAte.getTime();
         this.logger.log(`[END] getFacturas - Duración: ${duration}ms`);

@@ -23,6 +23,8 @@ import {
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { ApiResponse } from '../model/api-response.model';
 import { Public } from '../decorators/public.decorator';
+import { ISolicitudeAcceso } from 'src/core/domain/puertos/inbound/ISolicitudeAcceso.Interface';
+import { SOLICITUD_ACCESO_USECASE } from 'src/core/application/application.module';
 
 class CrearSolicitudDto {
     /** UUID del usuario que solicita acceso */
@@ -35,7 +37,7 @@ class CrearSolicitudDto {
 
 class ResolverSolicitudDto {
     /** UUID del admin que resuelve */
-    
+
     adminUuid: string;
     decision: 'APROBADA' | 'RECHAZADA';
     motivoRechazo?: string;
@@ -48,8 +50,7 @@ export class SolicitudAccesoController {
     private readonly logger = new Logger(SolicitudAccesoController.name);
 
     constructor(
-        @Inject(SOLICITUD_ACCESO_REPOSITORY)
-        private readonly repo: ISolicitudAccesoRepository,
+        @Inject(SOLICITUD_ACCESO_USECASE) private readonly solucitudAcceso: ISolicitudeAcceso,
     ) { }
 
     /**
@@ -63,7 +64,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[POST] solicitud-acceso org=${organizacionUuid} user=${body.solicitanteUuid}`);
-        const result = await this.repo.crearPorUuid(organizacionUuid, body.solicitanteUuid, body.rolSolicitado, body.mensaje);
+        const result = await this.solucitudAcceso.ExecuteSolicitarAcceso(organizacionUuid, body.solicitanteUuid, body.rolSolicitado, body.mensaje);
         return res.status(HttpStatus.CREATED).json(
             new ApiResponse(HttpStatus.CREATED, 'Solicitud de acceso creada. El administrador recibirá una notificación.', result),
         );
@@ -80,7 +81,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[GET] solicitudes-acceso org=${organizacionUuid} estado=${estado ?? 'all'}`);
-        const data = await this.repo.listarPorOrganizacion(organizacionUuid, estado);
+        const data = await this.solucitudAcceso.ExecuteListarSolicitudes(organizacionUuid, estado);
         return res.status(HttpStatus.OK).json(
             new ApiResponse(HttpStatus.OK, 'Solicitudes obtenidas', data),
         );
@@ -97,7 +98,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[GET] solicitud-acceso token=${token.slice(0, 8)}…`);
-        const data = await this.repo.obtenerPorToken(token);
+        const data = await this.solucitudAcceso.ExecuteObtenerPorToken(token);
         if (!data) {
             return res.status(HttpStatus.NOT_FOUND).json(
                 new ApiResponse(HttpStatus.NOT_FOUND, 'Solicitud no encontrada o token inválido.', null),
@@ -119,7 +120,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[POST] resolver token=${token.slice(0, 8)}… decision=${body.decision} admin=${body.adminUuid}`);
-        const result = await this.repo.resolver({
+        const result = await this.solucitudAcceso.ExecuteResolverSolicitud({
             token,
             adminUuid: body.adminUuid,
             decision: body.decision,
@@ -145,7 +146,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[DELETE] cancelar solicitud_id=${solicitudId} user=${body.solicitanteUuid}`);
-        const result = await this.repo.cancelar(solicitudId, body.solicitanteUuid);
+        const result = await this.solucitudAcceso.ExecuteCancelarSolicitud(solicitudId, body.solicitanteUuid);
         return res.status(HttpStatus.OK).json(
             new ApiResponse(HttpStatus.OK, 'Solicitud cancelada.', result),
         );
@@ -164,7 +165,7 @@ export class SolicitudAccesoController {
         @Res() res: Response,
     ) {
         this.logger.log(`[POST] uuid/${uuid}/solicitud-ingreso | solicitante=${body.solicitanteUuid}`);
-        const result = await this.repo.crearPorUuid(uuid, body.solicitanteUuid, body.rolSolicitado, body.mensaje);
+        const result = await this.solucitudAcceso.ExecuteSolicitarAcceso(uuid, body.solicitanteUuid, body.rolSolicitado, body.mensaje);
         return res.status(HttpStatus.CREATED).json(
             new ApiResponse(HttpStatus.CREATED, 'Solicitud de ingreso creada.', result),
         );

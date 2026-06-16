@@ -27,6 +27,7 @@ export interface IOrganizacionRepository {
     getOrganizacionesByTipoParticipante(tipoParticipante: string): Promise<OrganizacionModel[]>;
     createOrganizacion(input: OrganizacionModel): Promise<OrganizacionModel>;
     updateOrganizacion(organizacion: OrganizacionModel): Promise<OrganizacionModel>;
+    //asociarUsuarioOrganizacion(userUUID: string, organizacionUUID: string): Promise<void>;
     deleteOrganizacion(uuid: string): Promise<void>;
     checkRut(rut: string): Promise<{ exists: boolean; organizacion?: { id: string; razonSocial: string; tipoPersona: string; tipoParticipante: string; giros: object[] } }>;
 }

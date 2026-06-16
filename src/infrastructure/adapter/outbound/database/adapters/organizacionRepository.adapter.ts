@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
+import { error } from "console";
 import { OrganizacionModel } from "src/core/domain/model/organizacion.model";
 import {
     CrearOrganizacionInput,
@@ -54,8 +55,9 @@ export class organizacionRepositoriAdapter implements IOrganizacionRepository {
     async createOrganizacion(input: OrganizacionModel): Promise<OrganizacionModel> {
 
         // ON CONFLICT (rut, dv) -> actualiza updated_at y retorna el registro (idempotente)
-        const rows = await this.dataSource.query(
-            `INSERT INTO core.organizacion
+        try {
+            const rows = await this.dataSource.query(
+                `INSERT INTO core.organizacion
                (razon_social, tipo_organizacion, rut, dv, giro, tipo_participante)
              VALUES ($1, $2, $3, $4, $5, $6)
              ON CONFLICT (rut, dv) DO UPDATE
@@ -68,28 +70,36 @@ export class organizacionRepositoriAdapter implements IOrganizacionRepository {
                tipo_participante,
                rut,
                dv`,
-            [
-                input.razonSocial,
-                input.tipoOrganizacion,
-                input.rut,
-                input.rutDv,
-                input.getGiroPrincipal(),
-                input.tipoParticipante,
-            ],
-        );
+                [
+                    input.razonSocial,
+                    input.tipoOrganizacion,
+                    input.rut,
+                    input.rutDv,
+                    input.getGiroPrincipal(),
+                    input.tipoParticipante,
+                ],
+            );
 
-        const row = rows[0];
-        this.logger.log(`[createOrganizacion] id=${row.id} uuid=${row.uuid} rut=${input.rut}-${input.rutDv}`);
-        return OrganizacionModel.build()
-            .setOrganizacionId(row.id)
-            .setOrganizacionUuid(row.uuid)
-            .setRazonSocial(row.razon_social)
-            .setTipoOrganizacion(row.tipo_organizacion)
-            .setTipoParticipante(row.tipo_participante)
-            .setRut(row.rut)
-            .setRutDv(row.dv)
-            .build();
-        
+            const row = rows[0];
+            this.logger.log(`[createOrganizacion] id=${row.id} uuid=${row.uuid} rut=${input.rut}-${input.rutDv}`);
+            return OrganizacionModel.build()
+                .setOrganizacionId(row.id)
+                .setOrganizacionUuid(row.uuid)
+                .setRazonSocial(row.razon_social)
+                .setTipoOrganizacion(row.tipo_organizacion)
+                .setTipoParticipante(row.tipo_participante)
+                .setRut(row.rut)
+                .setRutDv(row.dv)
+                .build();
+        } catch (error: any) {
+            this.logger.error(
+                `Error al crear organización: ${error?.message ?? error}`,
+                `input: ${JSON.stringify(input)}`,
+                error?.stack,
+            );
+            return undefined as any;
+        }
+
     }
 
     async checkRut(rut: string): Promise<{ exists: boolean; organizacion?: { id: string; razonSocial: string; tipoPersona: string; tipoParticipante: string; giros: object[] } }> {
@@ -99,29 +109,31 @@ export class organizacionRepositoriAdapter implements IOrganizacionRepository {
         const dv = rut.slice(-1).toUpperCase();
         const rutNum = rut.slice(0, -1);
         const rows = await this.dataSource.query(
-            `SELECT
+                `SELECT
                     o.organizacion_uuid,
                     o.razon_social,
                     o.tipo_organizacion,
                     o.tipo_participante,
                     COALESCE(
-                      json_agg(
+                    json_agg(
                         json_build_object(
-                          'codigo',              ae.codigo,
-                          'descripcion',         ae.descripcion,
-                          'categoriaTributaria', ae.categoria_tributaria::text,
-                          'fechaInicio',         to_char(ae.fecha_inicio, 'DD-MM-YYYY'),
-                          'indicadorAfectoIva',  CASE WHEN ae.afecto_iva THEN 'S' ELSE 'N' END
+                        'codigo',              ae.codigo,
+                        'descripcion',         ce.descripcion,
+                        'categoriaTributaria', ce.categoria_tributaria::text,
+                        'fechaInicio',         to_char(ae.fecha_inicio, 'DD-MM-YYYY'),
+                        'indicadorAfectoIva',  CASE WHEN ce.afecto_iva THEN 'S' ELSE 'N' END
                         ) ORDER BY ae.es_principal DESC, ae.id
-                      ) FILTER (WHERE ae.id IS NOT NULL),
-                      '[]'
-                    ) AS giros
-                  FROM core.organizacion o
-                  LEFT JOIN core.organizacion_actividad_economica ae
-                    ON ae.organizacion_id = o.organizacion_id AND ae.activo = true
+                    ) FILTER (WHERE ae.id IS NOT NULL),
+                    '[]'
+                        ) AS giros
+                    FROM core.organizacion o
+                    LEFT JOIN core.actividad_organizacion ae
+                        ON ae.organizacion_uuid = o.organizacion_uuid AND ae.activo = true
+                    join core.categoria_economica ce
+                        on ce.codigo = ae.codigo and ce.fuente = ae.fuente
                   WHERE o.rut = $1 AND o.dv = $2 AND o.activo = true
-                  GROUP BY o.organizacion_uuid, o.razon_social, o.tipo_organizacion, o.tipo_participante
-                  LIMIT 1`,
+                    GROUP BY o.organizacion_uuid, o.razon_social, o.tipo_organizacion, o.tipo_participante
+                LIMIT 1`,
             [rutNum, dv],
         );
         if (rows.length === 0) {

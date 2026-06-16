@@ -13,6 +13,9 @@ import { WorkTeamRepositoryAdapter } from './infrastructure/adapter/outbound/dat
 import { StorageServiceAdapter } from './infrastructure/adapter/outbound/external-Service/storageService.adapter';
 import { organizacionRepositoriAdapter } from './infrastructure/adapter/outbound/database/adapters/organizacionRepository.adapter';
 import { PermisosRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/permisosManagerRepository.adapter';
+import { SolicitudAccesoRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/solicitudAccesoRepository.adapter';
+import { VerificacionTributariaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/verificacionTributariaRepository.adapter';
+import { TributaryService } from './core/application/service/tributary.service';
 
 @Module({
   imports: [
@@ -30,7 +33,10 @@ import { PermisosRepositoryAdapter } from './infrastructure/adapter/outbound/dat
         WorkTeamRepositoryAdapter: WorkTeamRepositoryAdapter,
         StorageServiceAdapter: StorageServiceAdapter,
         OrganizacionRepository: organizacionRepositoriAdapter,
-        PermisosManagerRepository: PermisosRepositoryAdapter
+        PermisosManagerRepository: PermisosRepositoryAdapter,
+        SolicitudAccesoRepository: SolicitudAccesoRepositoryAdapter,
+        VerificacionTributariaRepository: VerificacionTributariaRepositoryAdapter,
+        TributaryService: TributaryService,
       },
     }),
     JwtModule.register({

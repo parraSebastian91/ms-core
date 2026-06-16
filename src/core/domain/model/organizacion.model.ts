@@ -1,4 +1,5 @@
 import { GiroComercial } from "src/infrastructure/adapter/inbound/http-server/model/dto/organizacion.dto";
+import { TributaryModel } from "./tributaryData.model";
 
 export class OrganizacionModel {
     organizacionId: number;
@@ -10,7 +11,7 @@ export class OrganizacionModel {
     rutDv: string;
     tipoParticipante: string;
     giros?: GiroComercialModel[];
-
+    rawSii?: TributaryModel;
     constructor() {
         this.organizacionId = -1;
         this.organizacionUuid = "";
@@ -116,6 +117,11 @@ export namespace OrganizacionModel {
                 giro.esPrincipal = g.esPrincipal;
                 return giro;
             });
+            return this;
+        }
+
+        setRawSii(value: Record<string, any>): this {
+            this.model.rawSii = TributaryModel.fromRaw(value, 'SII');
             return this;
         }
 

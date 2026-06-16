@@ -20,7 +20,6 @@ import { CatalogoRepositoryAdapter } from '../../outbound/database/adapters/cata
 import { CATALOGO_REPOSITORY } from 'src/core/domain/puertos/outbound/ICatalogo.repository';
 import { OrganizacionController } from './controllers/organizacion.controller';
 import { VerificacionTributariaRepositoryAdapter } from '../../outbound/database/adapters/verificacionTributariaRepository.adapter';
-import { VERIFICACION_TRIBUTARIA_REPOSITORY } from 'src/core/domain/puertos/outbound/IVerificacionTributaria.repository';
 import { organizacionRepositoriAdapter } from '../../outbound/database/adapters/organizacionRepository.adapter';
 import { ORGANIZACION_REPOSITORY } from 'src/core/domain/puertos/outbound/IOrganizacion.repository';
 import { SolicitudAccesoController } from './controllers/solicitudAcceso.controller';
@@ -29,8 +28,6 @@ import { SOLICITUD_ACCESO_REPOSITORY } from 'src/core/domain/puertos/outbound/IS
 import { OrganizacionAdminController } from './controllers/organizacion-admin.controller';
 import { OrganizacionAdminRepositoryAdapter } from '../../outbound/database/adapters/organizacionAdminRepository.adapter';
 import { ORGANIZACION_ADMIN_REPOSITORY } from 'src/core/domain/puertos/outbound/IOrganizacionAdmin.repository';
-import { ORGANIZACION_USECASE } from 'src/core/domain/puertos/inbound/IOrganizacionAdministrator';
-import { OrganizacionUseCase } from 'src/core/application/usesCase/organizacion/organizacion.usecase';
 import { TributaryService } from 'src/core/application/service/tributary.service';
 
 @Module({
@@ -61,10 +58,6 @@ import { TributaryService } from 'src/core/application/service/tributary.service
             useExisting: CatalogoRepositoryAdapter,
         },
         VerificacionTributariaRepositoryAdapter,
-        {
-            provide: VERIFICACION_TRIBUTARIA_REPOSITORY,
-            useExisting: VerificacionTributariaRepositoryAdapter,
-        },
         organizacionRepositoriAdapter,
         {
             provide: ORGANIZACION_REPOSITORY,
@@ -79,17 +72,6 @@ import { TributaryService } from 'src/core/application/service/tributary.service
         {
             provide: ORGANIZACION_ADMIN_REPOSITORY,
             useExisting: OrganizacionAdminRepositoryAdapter,
-        },
-        {
-            provide: TributaryService,
-            inject: [VERIFICACION_TRIBUTARIA_REPOSITORY],
-            useFactory: (verificacionRepo) => new TributaryService(verificacionRepo),
-        },
-        {
-            provide: ORGANIZACION_USECASE,
-            inject: [ORGANIZACION_REPOSITORY, TributaryService, VERIFICACION_TRIBUTARIA_REPOSITORY],
-            useFactory: (orgRepo, tributaryService, verificacionRepo) =>
-                new OrganizacionUseCase(orgRepo, tributaryService, verificacionRepo),
         },
         {
             provide: APP_INTERCEPTOR,

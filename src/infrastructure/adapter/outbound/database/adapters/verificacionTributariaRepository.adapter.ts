@@ -136,27 +136,45 @@ export class VerificacionTributariaRepositoryAdapter
         return { id };
     }
 
-    async insertActividadEconomica(organizacionId: number, actividad: GiroComercialModel): Promise<void> {
+    async insertActividadEconomica(actividad: GiroComercialModel): Promise<void> {
         try {
             await this.dataSource.query(
-                `INSERT INTO core.organizacion_actividad_economica
-                    (organizacion_id, fuente, codigo, descripcion,
-                        categoria_tributaria, afecto_iva, fecha_inicio, es_principal)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                `INSERT INTO core.categoria_economica
+                    (fuente, codigo, descripcion, categoria_tributaria, afecto_iva, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
                 [
-                    organizacionId,
                     actividad.fuente, // Fuente fija para actividades provenientes de verificación tributaria
                     actividad.codigo,
                     actividad.descripcion,
                     actividad.categoriaTributaria,
                     actividad.afectoIva,
-                    actividad.fechaInicio,
-                    actividad.esPrincipal,
+                    new Date(),
+                    new Date(),
                 ],
             );
-            this.logger.log(`[OK] Actividades económicas insertadas | orgId=${organizacionId} | fuente=${actividad.fuente}`);
+            this.logger.log(`[OK] Actividades económicas insertadas | fuente=${actividad.fuente}`);
         } catch (error) {
-            this.logger.error(`[ERROR] Insertando actividades económicas | orgId=${organizacionId} | fuente=${actividad.fuente} | error=${error}`);
+            this.logger.warn(`Actividad Economica ya existente | fuente=${actividad.fuente}`);
+        }
+    }
+
+    async soncronizarActividadesEconomicas(organizacionuuID: string, fuente: string, actividades: GiroComercialModel[]): Promise<void> {
+        const params: any[] = [];
+        const placeholders = actividades.map((act, index) => {
+            const base = index * 6;
+            const rawFecha = act.fechaInicio;
+            const fechaInicio = rawFecha != null && !isNaN(new Date(rawFecha as any).getTime()) ? rawFecha : null;
+            params.push(organizacionuuID, fuente, act.codigo, fechaInicio, act.esPrincipal, new Date());
+            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, true, $${base + 6})`;
+        });
+        const query = `
+        INSERT INTO core.actividad_organizacion (organizacion_uuid, fuente, codigo, fecha_inicio, es_principal, activo, created_at)
+        VALUES ${placeholders.join(', ')}
+        `;
+        try {
+            await this.dataSource.query(query, params);
+        } catch (error) {
+            this.logger.error(`Error sincronizando actividades económicas | orgUuid=${organizacionuuID} | fuente=${fuente} | error=${error}`);
             throw error;
         }
     }
