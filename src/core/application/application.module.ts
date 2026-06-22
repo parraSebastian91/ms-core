@@ -22,6 +22,8 @@ import { ISolicitudAccesoRepository } from '../domain/puertos/outbound/ISolicitu
 import { OrganizacionUseCase } from './usesCase/organizacion/organizacion.usecase';
 import { TributaryService } from './service/tributary.service';
 import { IVerificacionTributariaRepository } from '../domain/puertos/outbound/IVerificacionTributaria.repository';
+import { storageUsecase } from './usesCase/storage/storage.usecase';
+import { IStorageMediaRepository } from '../domain/puertos/outbound/IMedia.repository';
 
 export type ApplicationModuleOptions = {
     modules: any[];
@@ -36,6 +38,7 @@ export type ApplicationModuleOptions = {
         SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
         VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
         TributaryService: Type<TributaryService>;
+        StorageMediaRepository: Type<IStorageMediaRepository>;
     }
 }
 
@@ -43,6 +46,8 @@ export const USER_PROFILE_USE_CASE = 'USER_PROFILE_USE_CASE';
 export const FACTURA_MANAGER_USE_CASE = 'FACTURA_MANAGER_USE_CASE';
 export const SOLICITUD_ACCESO_USECASE = 'SOLICITUD_ACCESO_USECASE';
 export const ORGANIZACION_USECASE = 'ORGANIZACION_USECASE';
+export const STORAGE_USECASE = 'STORAGE_USECASE';
+
 
 export const PERMISOS_SERVICE = 'PERMISOS_SERVICE';
 export const FACTURA_SERVICE = 'FACTURA_SERVICE';
@@ -62,6 +67,7 @@ export class ApplicationModule {
             PermisosManagerRepository,
             VerificacionTributariaRepository,
             SolicitudAccesoRepository,
+            StorageMediaRepository,
             TributaryService
         } = adapters;
 
@@ -165,6 +171,14 @@ export class ApplicationModule {
             }
         };
 
+        const StorageServiceProvider = {
+            provide: STORAGE_USECASE,
+            inject: [StorageMediaRepository],
+            useFactory: (StorageMediaRepository: IStorageMediaRepository) => {
+                return new storageUsecase(StorageMediaRepository);
+            }
+        };
+
         return {
             module: ApplicationModule,
             imports: [...modules],
@@ -175,7 +189,8 @@ export class ApplicationModule {
                 FacturaManagerUseCaseProvider,
                 SolicitudAccesoUseCaseProvider,
                 TributaryServiceProvider,
-                OrganizacionUseCaseProvider
+                OrganizacionUseCaseProvider,
+                StorageServiceProvider
             ],
             exports: [
                 USER_PROFILE_USE_CASE,
@@ -183,7 +198,8 @@ export class ApplicationModule {
                 PERMISOS_SERVICE,
                 FACTURA_SERVICE,
                 SOLICITUD_ACCESO_USECASE,
-                ORGANIZACION_USECASE
+                ORGANIZACION_USECASE,
+                STORAGE_USECASE
             ]
         }
 

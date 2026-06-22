@@ -1,16 +1,46 @@
 
 export enum CATEGORY_PROCESS {
-    DTE_FACTURA = "DTE-factura",
-    DTE_FACTURA_RESPALDO = "DTE-factura-respaldo",
+    USER_AVATAR = "user-avatar",
+    ORG_AVATAR = "org-avatar",
+    USER_BANNER = "user-banner",
+    ORG_BANNER = "org-banner",
+    DOCUMENT_DTE = "DTE-factura",
+    DOCUMENT_DTE_RESPALDO = "DTE-factura-respaldo",
+    DOCUMENT_OC = "orden-compra",
+    DOCUMENT_GD = "guia-despacho",
+    DOCUMENT_AE = "acta-entrega",
+    DOCUMENT_EP = "estado-pago",
+    DOCUMENT_HES = "hoja-entrada-servicio",
+    SOCIAL_POST = "social-post",
+    OTHER = "OTHER",
+}
+
+export enum MEDIA_TYPE {
+    MEDIA_TYPE_IMAGE = "IMAGE",
+    MEDIA_TYPE_VIDEO = "VIDEO",
+    MEDIA_TYPE_DOCUMENT = "DOCUMENT",
+    MEDIA_TYPE_ARCHIVE = "ARCHIVE"
+}
+
+
+export enum RESOURCE_TYPE {
+    RESOURCE_TYPE_USER_AVATAR = "IMAGEN",
+    RESOURCE_TYPE_USER_BANNER = "BANNER",
+    RESOURCE_TYPE_DOCUMENT_FACTURA = "FACTURA",
+    RESOURCE_TYPE_SOCIAL_POST = "social-post"
 }
 
 export enum EVENT_CODES {
-    READY = "READY",
-    ERROR = "ERROR"
+    STATE_PROCESS_PENDING = "PENDING",
+    STATE_PROCESS_UPLOADED = "UPLOADED",
+    STATE_PROCESS_PROCESSING = "PROCESSING",
+    STATE_PROCESS_READY = "READY",
+    STATE_PROCESS_ERROR = "ERROR",
+    STATE_PROCESS_UNSUPPORTED_TYPE = "UNSUPPORTED_TYPE"
 }
 
 
-export enum createdBy{
+export enum createdBy {
     FORM = "FORM",
     OCR = "OCR",
     AGENT = "AGENT"

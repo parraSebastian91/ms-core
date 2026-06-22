@@ -55,7 +55,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
             customHeaders?: Record<string, unknown>
         ) => {
             const notificacionBody: NotificacionDTO<FacturaDTO> = new NotificacionDTO<FacturaDTO>(
-                CATEGORY_PROCESS.DTE_FACTURA,
+                CATEGORY_PROCESS.DOCUMENT_DTE,
                 factura.ownerUUID,
                 gestorUsername,
                 factura.correlationId,
@@ -222,7 +222,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
         }
 
         const notificacionBody: NotificacionDTO<FacturaDTO> = new NotificacionDTO<FacturaDTO>(
-            CATEGORY_PROCESS.DTE_FACTURA,
+            CATEGORY_PROCESS.DOCUMENT_DTE,
             factura.ownerUUID,
             factura.gestor.username,
             factura.correlationId,
@@ -244,7 +244,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
     }
 
     async ExecuteGetFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]> {
-        return await this.facturaRepository.getFacturas(usuario, orgUUID,  filtro);
+        return await this.facturaRepository.getFacturas(usuario, orgUUID, filtro);
     }
 
     async ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{ campo: string, id: string, valor: any, isUpdate: any, mensaje: string }> {
@@ -317,7 +317,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
         let mensaje: MessageDTO;
 
-        if (status === EVENT_CODES.READY) {
+        if (status === EVENT_CODES.STATE_PROCESS_READY) {
             const facturaAlmacenada = await this.facturaRepository.getFacturaByID(factura.publiInvoiceId);
             if (!facturaAlmacenada) {
                 this.logger.warn(`[ExecuteCargaDocumentoRespaldo] Factura no encontrada en BD: ${factura.publiInvoiceId}`);
@@ -331,7 +331,7 @@ export class FacturaManagerUseCase implements IFacturaManager {
 
         const gestor = typeof factura.gestor === 'string' ? factura.gestor : factura.gestor?.username ?? '';
         const notificacion = new NotificacionDTO<FacturaDTO>(
-            CATEGORY_PROCESS.DTE_FACTURA_RESPALDO,
+            CATEGORY_PROCESS.DOCUMENT_DTE_RESPALDO,
             factura.ownerUUID,
             gestor,
             factura.correlationId,

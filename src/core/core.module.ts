@@ -15,6 +15,7 @@ import { IPermisosManagerRepository } from './domain/puertos/outbound/IPermisosM
 import { ISolicitudAccesoRepository } from './domain/puertos/outbound/ISolicitudAcceso.repository';
 import { TributaryService } from './application/service/tributary.service';
 import { IVerificacionTributariaRepository } from './domain/puertos/outbound/IVerificacionTributaria.repository';
+import { IStorageMediaRepository } from './domain/puertos/outbound/IMedia.repository';
 
 export type CoreModuleOptions = {
     modules: any[];
@@ -29,6 +30,7 @@ export type CoreModuleOptions = {
         SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
         VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
         TributaryService: Type<TributaryService>;
+        StorageMediaRepository: Type<IStorageMediaRepository>;
     }
 }
 
@@ -49,7 +51,8 @@ export class CoreModule {
             PermisosManagerRepository,
             SolicitudAccesoRepository,
             VerificacionTributariaRepository,
-            TributaryService
+            TributaryService,
+            StorageMediaRepository
         } = adapters;
 
         return {
@@ -70,7 +73,8 @@ export class CoreModule {
                         PermisosManagerRepository,
                         SolicitudAccesoRepository,
                         VerificacionTributariaRepository,
-                        TributaryService
+                        TributaryService,
+                        StorageMediaRepository
                     }
                 })
             ],

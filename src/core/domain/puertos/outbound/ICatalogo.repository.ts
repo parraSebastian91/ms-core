@@ -43,6 +43,18 @@ export interface ProductoFinancieroRow {
     aplica_a: string[];
 }
 
+export interface MediaCategoryExtensionRow {
+    extension: string;
+    mime: string;
+    descripcion: string | null;
+}
+
+export interface MediaCategoryRow {
+    codigo: number;
+    nombre: string;
+    extensiones: MediaCategoryExtensionRow[];
+}
+
 export const CATALOGO_REPOSITORY = 'CATALOGO_REPOSITORY';
 
 export interface ICatalogoRepository {
@@ -51,5 +63,5 @@ export interface ICatalogoRepository {
     getComunas(provinciaId: number): Promise<ComunaRow[]>;
     getBancos(paisCodigo: string): Promise<BancoRow[]>;
     getProductosFinancieros(tipoOrg?: string): Promise<ProductoFinancieroRow[]>;
-    getMediaCategory(mediaType: string): Promise<{ codigo: number; nombre: string }[]>;
+    getMediaCategory(mediaType: string): Promise<MediaCategoryRow[]>;
 }

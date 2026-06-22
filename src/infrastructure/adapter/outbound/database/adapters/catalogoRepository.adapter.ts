@@ -5,6 +5,7 @@ import {
     BancoRow,
     ComunaRow,
     ICatalogoRepository,
+    MediaCategoryRow,
     ProductoFinancieroRow,
     ProvinciaRow,
     RegionRow,
@@ -101,14 +102,23 @@ export class CatalogoRepositoryAdapter implements ICatalogoRepository {
         }
     }
 
-    async getMediaCategory(mediaType: string): Promise<{ codigo: number; nombre: string }[]> {
+    async getMediaCategory(mediaType: string): Promise<MediaCategoryRow[]> {
         try {
             return await this.dataSource.query(
-                `SELECT codigo, nombre
-                 FROM media.categoria c 
-                 WHERE c.media_type = $1
-                 ORDER BY c.nombre`,
-                [mediaType.toUpperCase()],
+                `SELECT c.codigo, c.nombre, json_agg(
+                        json_build_object(
+                        'extension',              mts.extension,
+                        'mime',         mts.mime_type,
+                        'descripcion', mts.descripcion
+                        ) 
+                    ) as extensiones
+                FROM media.categoria c 
+                join media.mime_type_soportado mts 
+                    on c."media_type" = mts."media_type" 	
+                    and mts.ocr_soportado = true
+                    and mts.activo = true
+                group by c.nombre, c.codigo
+                ORDER BY c.nombre, c.codigo`
             );
         } catch (error: any) {
             this.logger.error(`Error getMediaCategory mediaType=${mediaType}: ${error?.message}`);

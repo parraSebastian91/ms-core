@@ -29,6 +29,7 @@ import { OrganizacionAdminController } from './controllers/organizacion-admin.co
 import { OrganizacionAdminRepositoryAdapter } from '../../outbound/database/adapters/organizacionAdminRepository.adapter';
 import { ORGANIZACION_ADMIN_REPOSITORY } from 'src/core/domain/puertos/outbound/IOrganizacionAdmin.repository';
 import { TributaryService } from 'src/core/application/service/tributary.service';
+import { StorageController } from './controllers/storage.controller';
 
 @Module({
     imports: [
@@ -46,6 +47,7 @@ import { TributaryService } from 'src/core/application/service/tributary.service
         OrganizacionController,
         SolicitudAccesoController,
         OrganizacionAdminController,
+        StorageController
     ],
     providers: [
         AccessTokenContext,

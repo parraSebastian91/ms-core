@@ -28,6 +28,7 @@ import { CATALOGO_REPOSITORY } from 'src/core/domain/puertos/outbound/ICatalogo.
 import { SolicitudAccesoRepositoryAdapter } from './adapter/outbound/database/adapters/solicitudAccesoRepository.adapter';
 import { VerificacionTributariaRepositoryAdapter } from './adapter/outbound/database/adapters/verificacionTributariaRepository.adapter';
 import { OrganizacionAdminRepositoryAdapter } from './adapter/outbound/database/adapters/organizacionAdminRepository.adapter';
+import { StorageMEdiaRepositoryAdapter } from './adapter/outbound/database/adapters/storageMediaRepository.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
@@ -101,6 +102,7 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         SolicitudAccesoRepositoryAdapter,
         VerificacionTributariaRepositoryAdapter,
         CatalogoRepositoryAdapter,
+        StorageMEdiaRepositoryAdapter,
         {
             provide: CATALOGO_REPOSITORY,
             useExisting: CatalogoRepositoryAdapter,
@@ -171,6 +173,7 @@ const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
         CatalogoRepositoryAdapter,
         SolicitudAccesoRepositoryAdapter,
         VerificacionTributariaRepositoryAdapter,
+        StorageMEdiaRepositoryAdapter,
         CATALOGO_REPOSITORY,
         STORAGE_SERVICE,
         ClientsModule

@@ -5,11 +5,13 @@ import { ValidationPipe } from './infrastructure/adapter/inbound/http-server/pip
 import * as vault from 'node-vault';
 
 async function preloadVaultToEnv() {
-  const client = vault({
+
+  const clientValores = {
     apiVersion: 'v1',
-    endpoint: process.env.VAULT_ADDR || 'http://vault:8200',
-    token: process.env.VAULT_TOKEN || 'myroot',
-  });
+    endpoint: process.env.VAULT_ADDR,
+    token: process.env.VAULT_TOKEN,
+  }
+  const client = vault(clientValores);
 
   const paths = ['JWT', 'DB-SEIS-POSTGRES', 'REDIS', 'SHARED'];
 

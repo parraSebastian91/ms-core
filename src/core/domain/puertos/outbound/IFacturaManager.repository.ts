@@ -1,4 +1,4 @@
-import { facturaEstado } from "../../model/constantes.model";
+import { CATEGORY_PROCESS, facturaEstado } from "../../model/constantes.model";
 import { FacturaModel, NotaOCR } from "../../model/factura.model";
 import { FacturaUpdateModel } from "../../model/facturaUpdate.model";
 import { AutorizacionPublicacionPayload, VersionTerminosRecord } from "../inbound/IFacturaPublisher.interface";

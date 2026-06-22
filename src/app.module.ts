@@ -16,6 +16,7 @@ import { PermisosRepositoryAdapter } from './infrastructure/adapter/outbound/dat
 import { SolicitudAccesoRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/solicitudAccesoRepository.adapter';
 import { VerificacionTributariaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/verificacionTributariaRepository.adapter';
 import { TributaryService } from './core/application/service/tributary.service';
+import { StorageMEdiaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/storageMediaRepository.adapter';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { TributaryService } from './core/application/service/tributary.service';
         SolicitudAccesoRepository: SolicitudAccesoRepositoryAdapter,
         VerificacionTributariaRepository: VerificacionTributariaRepositoryAdapter,
         TributaryService: TributaryService,
+        StorageMediaRepository: StorageMEdiaRepositoryAdapter
       },
     }),
     JwtModule.register({
