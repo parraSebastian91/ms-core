@@ -1,13 +1,15 @@
+import { ConfigService } from '@nestjs/config';
+
 import { CATEGORY_PROCESS, MEDIA_TYPE } from "src/core/domain/model/constantes.model";
 import { StorageMediaModel } from "src/core/domain/model/storageMedia.model";
 import { IStorage } from "src/core/domain/puertos/inbound/IStorage.iterface";
 import { IStorageMediaRepository } from "src/core/domain/puertos/outbound/IMedia.repository";
 
 export class storageUsecase implements IStorage {
-
     constructor(
-        private readonly mediaRepository: IStorageMediaRepository
-    ) { }
+        private readonly mediaRepository: IStorageMediaRepository,
+        private readonly configService: ConfigService,
+    ) {}
 
     async getPutPresignedUrl(
         UUID: string,
@@ -96,6 +98,15 @@ export class storageUsecase implements IStorage {
             this.mediaRepository.updateMediaObjectKey(media.AssetId, newObject)
         ]);
         return newObject;
+    }
+
+    async getGetPresignedUrl(userUuid: string, orgUuid: string, assetId: string, correlationId: string): Promise<{ objectKey: string, ttlSeconds: number }> {
+        const media = await this.mediaRepository.getMediaKey(userUuid, orgUuid, assetId, correlationId);
+        if (!media) {
+            throw new Error(`No se encontró un objeto de medios para el usuario con UUID: ${userUuid}`);
+        }
+        return { objectKey: media.storageKey, ttlSeconds: this.configService.get<number>('app.ttlGetObject') };
+
     }
 
     private sanitizeObjectKeyExtension(value: string): string {

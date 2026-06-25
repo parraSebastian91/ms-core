@@ -9,4 +9,10 @@ export interface IStorage {
         Organization: string,
         idFactura?: string
     ): Promise<string>;
+    getGetPresignedUrl(
+        userUuid: string,
+        orgUuid: string,
+        assetId: string,
+        correlationId: string
+    ): Promise<{ objectKey: string, ttlSeconds: number }>;
 }

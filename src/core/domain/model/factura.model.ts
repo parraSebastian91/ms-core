@@ -73,6 +73,14 @@ export class FacturaModel {
     ofertas_revisadas: number;
     ofertas_aceptadas: number;
     ofertas_rechazadas: number;
+    mejor_tasa: number;
+    mejor_monto_oferta: number;
+    ultima_actualizacion_oferta: Date | null;
+    esta_ofertada: boolean;
+    tiene_permiso: boolean;
+    org_contexto_uuid: string;
+    created_at: Date;
+    updated_at: Date;
     url_factura: string | null;
     createdBy: createdBy;
     notas?: string[];
@@ -95,6 +103,14 @@ export class FacturaModel {
         this.ofertas_revisadas = 0;
         this.ofertas_aceptadas = 0;
         this.ofertas_rechazadas = 0;
+        this.mejor_tasa = 0;
+        this.mejor_monto_oferta = 0;
+        this.ultima_actualizacion_oferta = null;
+        this.esta_ofertada = false;
+        this.tiene_permiso = false;
+        this.org_contexto_uuid = "";
+        this.created_at = new Date();
+        this.updated_at = new Date();
         this.url_factura = null;
         this.createdBy = createdBy.FORM;
     }
@@ -123,6 +139,14 @@ export class FacturaModel {
         factura.ofertas_revisadas = entity.ofertas_revisadas || 0;
         factura.ofertas_aceptadas = entity.ofertas_aceptadas || 0;
         factura.ofertas_rechazadas = entity.ofertas_rechazadas || 0;
+        factura.mejor_tasa = entity.mejor_tasa || 0;
+        factura.mejor_monto_oferta = entity.mejor_monto_oferta || 0;
+        factura.ultima_actualizacion_oferta = entity.ultima_actualizacion_oferta ? new Date(entity.ultima_actualizacion_oferta) : null;
+        factura.esta_ofertada = entity.esta_ofertada || false;
+        factura.tiene_permiso = entity.tiene_permiso || false;
+        factura.org_contexto_uuid = entity.org_contexto_uuid || "";
+        factura.created_at = entity.created_at;
+        factura.updated_at = entity.updated_at;
         factura.url_factura = entity.url_factura;
         factura.createdBy = entity.created_by as createdBy;
         if (entity.notas) {

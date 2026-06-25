@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Inject, Logger, Query, Res, UseFilters } from "@nestjs/common";
+import { Controller, Get, HttpStatus, Inject, Logger, Query, Res, UseFilters, Param } from "@nestjs/common";
 import type { Response } from "express";
 import { STORAGE_USECASE } from "src/core/application/application.module";
 import { IStorage } from "src/core/domain/puertos/inbound/IStorage.iterface";
@@ -33,6 +33,25 @@ export class StorageController {
         const correlationIdValue = correlationId || ''; // Aquí puedes generar o obtener el correlationId según tu lógica
         const url = await this.storageService.getPutPresignedUrl(uuid, gestor, objectType, fileName, contentType, correlationIdValue, organization, idFactura);
         console.log(`Generated presigned URL: ${url}`);
+        this.logger.log(`Presigned URL generated at ${new Date().toISOString()} correlationId=${correlationIdValue} duration=${new Date().getTime() - date.getTime()}ms`);
+        return res.status(HttpStatus.OK).json(
+            new ApiResponse(HttpStatus.OK, 'Url Generada', url),
+        );
+    }
+
+    @Get('object-url/:assetId')
+    async getObjectUrlByAssetId(
+        @Res() res: Response,
+        @Param('assetId') assetId: string,
+        @Query('orgUuid') orgUuid: string,
+        @Query('userUuid') userUuid: string,
+        @Query('correlation_id') correlationId?: string,
+    ) {
+        const date = new Date();
+        this.logger.log(`Request received at ${date.toISOString()} correlationId=${correlationId}`);
+        const correlationIdValue = correlationId || ''; // Aquí puedes generar o obtener el correlationId según tu lógica
+        const url = await this.storageService.getGetPresignedUrl(userUuid, orgUuid, assetId, correlationIdValue);
+        console.log(`Generated presigned URL: ${url}`); 
         this.logger.log(`Presigned URL generated at ${new Date().toISOString()} correlationId=${correlationIdValue} duration=${new Date().getTime() - date.getTime()}ms`);
         return res.status(HttpStatus.OK).json(
             new ApiResponse(HttpStatus.OK, 'Url Generada', url),

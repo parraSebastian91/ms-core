@@ -173,9 +173,9 @@ export class ApplicationModule {
 
         const StorageServiceProvider = {
             provide: STORAGE_USECASE,
-            inject: [StorageMediaRepository],
-            useFactory: (StorageMediaRepository: IStorageMediaRepository) => {
-                return new storageUsecase(StorageMediaRepository);
+            inject: [StorageMediaRepository, ConfigService],
+            useFactory: (StorageMediaRepository: IStorageMediaRepository, configService: ConfigService) => {
+                return new storageUsecase(StorageMediaRepository, configService);
             }
         };
 

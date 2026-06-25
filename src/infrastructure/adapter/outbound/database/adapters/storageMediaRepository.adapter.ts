@@ -160,4 +160,22 @@ export class StorageMEdiaRepositoryAdapter implements IStorageMediaRepository {
             return false;
         }
     }
+
+    async getMediaKey(userUuid: string,orgUuid: string, assetId: string, correlationId: string): Promise<{storageKey: string, auditId: string} | null> {
+        try {
+            const rows = await this.dataSource.query(
+                `SELECT storage_key, audit_id FROM permisos.get_asset_storage_key($1, $2, $3, $4, $5, $6, $7)`,
+                [assetId, userUuid,orgUuid,'VIEW', null, correlationId, null]
+            );
+            if (rows.length === 0) {
+                return null;
+            }
+            const mediaRow = rows[0];
+            const {storage_key, audit_id} = mediaRow;
+            return {storageKey: storage_key, auditId: audit_id};
+        } catch (error) {
+            console.error('Error al obtener la clave de media:', error);
+            throw new Error('Error al obtener la clave de media');
+        }
+    }
 }

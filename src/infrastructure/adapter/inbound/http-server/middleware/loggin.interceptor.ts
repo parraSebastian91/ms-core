@@ -21,6 +21,10 @@ export class LoggerInterceptor implements NestInterceptor {
     const correlationId = response.getHeader('X-Correlation-Id') || request.headers?.['x-correlation-id'];
     const startTime = Date.now();
 
+    if (url.includes('/health')) {
+      return next.handle();
+    }
+
     this.logger.log(`[ENTRADA] ${method} ${url} | IP: ${ip} | User-Agent: ${userAgent} | SessionID: ${sessionID} | CorrelationId: ${correlationId}`);
 
     return next.handle().pipe(
