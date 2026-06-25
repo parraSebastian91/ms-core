@@ -141,7 +141,8 @@ export class StorageMEdiaRepositoryAdapter implements IStorageMediaRepository {
                 break;
             case CATEGORY_PROCESS.DOCUMENT_DTE_RESPALDO:
                 query = `INSERT INTO factura.factura_adjuntos ( factura_id, asset_id, tipo, es_principal, orden, descripcion) 
-                                VALUES($1, $2, $3, $4, $5, $6);`                                                
+                                VALUES($1, $2, $3, $4, $5, $6);`  
+                isPrincipal = true;                                                              
                 params = [
                     media.ownerid,
                     media.AssetId,

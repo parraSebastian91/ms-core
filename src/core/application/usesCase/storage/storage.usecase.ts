@@ -89,7 +89,7 @@ export class storageUsecase implements IStorage {
 
         const media = await this.mediaRepository.createMediaObject(StoraMEdiaModel);
 
-        const newObject = `${objectKey}${ObjectType}_${media.AssetId}.${extension}`;
+        const newObject = `${objectKey}${ObjectType}_${media.AssetId}.${extension}`.replace(/ /g, '_');
 
         // await this.mediaRepository.updateMediaObjectKey(media.AssetId, newObject);
         // await this.mediaRepository.addAssets(media, ObjectType);
