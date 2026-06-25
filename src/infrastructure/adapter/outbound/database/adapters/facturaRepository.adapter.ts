@@ -123,11 +123,11 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
 
         switch (filtro) {
             case 'xorganizacion':
-                query += `SELECT * FROM permisos.obtener_facturas_accesibles($1,$2) WHERE cedente_org_id = $3 `;
+                query += `SELECT * FROM permisos.obtener_facturas_accesibles($1,$2) WHERE cedente_org_id = $3 and created_at > '2026-06-25 01:00:00'::timestamp`;
                 params = [usuario, orgUUID, orgUUID];
                 break;
             default:
-                query = `SELECT * FROM permisos.obtener_facturas_accesibles($1) `;
+                query = `SELECT * FROM permisos.obtener_facturas_accesibles($1) where created_at > '2026-06-25 01:00:00'::timestamp`
                 params = [usuario];
                 break;
         }
