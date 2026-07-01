@@ -16,32 +16,54 @@ import { ISolicitudAccesoRepository } from './domain/puertos/outbound/ISolicitud
 import { TributaryService } from './application/service/tributary.service';
 import { IVerificacionTributariaRepository } from './domain/puertos/outbound/IVerificacionTributaria.repository';
 import { IStorageMediaRepository } from './domain/puertos/outbound/IMedia.repository';
+import { IFacturaCacheRepository } from './domain/puertos/outbound/IFacturaCache.repository';
 
 export type CoreModuleOptions = {
-    modules: any[];
-    adapters: {
-        UserProfileRepository: Type<IUserProfileRepository>;
-        FacturaManagerRepository: Type<IFacturaManagerRepository>;
-        QueueClientAdapter: Type<IMessagePublisher>,
-        WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
-        StorageServiceAdapter: Type<IStorageService>;
-        OrganizacionRepository: Type<IOrganizacionRepository>;
-        PermisosManagerRepository: Type<IPermisosManagerRepository>;
-        SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
-        VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
-        TributaryService: Type<TributaryService>;
-        StorageMediaRepository: Type<IStorageMediaRepository>;
-    }
-}
-
-
+  modules: any[];
+  adapters: {
+    UserProfileRepository: Type<IUserProfileRepository>;
+    FacturaManagerRepository: Type<IFacturaManagerRepository>;
+    QueueClientAdapter: Type<IMessagePublisher>;
+    WorkTeamRepositoryAdapter: Type<IWorkTeamRepository>;
+    StorageServiceAdapter: Type<IStorageService>;
+    OrganizacionRepository: Type<IOrganizacionRepository>;
+    PermisosManagerRepository: Type<IPermisosManagerRepository>;
+    SolicitudAccesoRepository: Type<ISolicitudAccesoRepository>;
+    VerificacionTributariaRepository: Type<IVerificacionTributariaRepository>;
+    TributaryService: Type<TributaryService>;
+    StorageMediaRepository: Type<IStorageMediaRepository>;
+    FacturaCacheRepository: Type<IFacturaCacheRepository>;
+  };
+};
 
 @Module({})
 export class CoreModule {
+  static register(options: CoreModuleOptions): DynamicModule {
+    const { adapters, modules } = options;
+    const {
+      UserProfileRepository,
+      FacturaManagerRepository,
+      QueueClientAdapter,
+      WorkTeamRepositoryAdapter,
+      StorageServiceAdapter,
+      OrganizacionRepository,
+      PermisosManagerRepository,
+      SolicitudAccesoRepository,
+      VerificacionTributariaRepository,
+      TributaryService,
+      StorageMediaRepository,
+      FacturaCacheRepository,
+    } = adapters;
 
-    static register(options: CoreModuleOptions): DynamicModule {
-        const { adapters, modules } = options;
-        const {
+    return {
+      module: CoreModule,
+      global: true,
+      imports: [
+        ...modules,
+        DomainModule,
+        ApplicationModule.register({
+          modules,
+          adapters: {
             UserProfileRepository,
             FacturaManagerRepository,
             QueueClientAdapter,
@@ -52,36 +74,12 @@ export class CoreModule {
             SolicitudAccesoRepository,
             VerificacionTributariaRepository,
             TributaryService,
-            StorageMediaRepository
-        } = adapters;
-
-        return {
-            module: CoreModule,
-            global: true,
-            imports: [
-                ...modules,
-                DomainModule,
-                ApplicationModule.register({
-                    modules,
-                    adapters: {
-                        UserProfileRepository,
-                        FacturaManagerRepository,
-                        QueueClientAdapter,
-                        WorkTeamRepositoryAdapter,
-                        StorageServiceAdapter,
-                        OrganizacionRepository,
-                        PermisosManagerRepository,
-                        SolicitudAccesoRepository,
-                        VerificacionTributariaRepository,
-                        TributaryService,
-                        StorageMediaRepository
-                    }
-                })
-            ],
-            exports: [
-                ApplicationModule
-            ],
-        };
-    }
-
+            StorageMediaRepository,
+            FacturaCacheRepository
+          },
+        }),
+      ],
+      exports: [ApplicationModule],
+    };
+  }
 }

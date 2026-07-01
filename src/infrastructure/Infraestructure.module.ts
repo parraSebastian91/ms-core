@@ -7,10 +7,12 @@ import { DatabaseModule } from './adapter/outbound/database/databaseConfig.modul
 import { HttpServerModule } from './adapter/inbound/http-server/http-server.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SecretsModule } from './secrets/secrets.module';
-import { ConfigModule, ConfigService, ConfigModule as NestConfigModule } from '@nestjs/config';
+import {
+  ConfigModule,
+  ConfigService,
+  ConfigModule as NestConfigModule,
+} from '@nestjs/config';
 import { MetricsModule } from './metrics/metrics.module';
-import { CacheModule } from '@nestjs/cache-manager';
-import { RedisStore } from 'connect-redis';
 import { UserProfileRepositoryAdapter } from './adapter/outbound/database/adapters/userProfileRepository.adapter';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { FacturaRepositoryAdapter } from './adapter/outbound/database/adapters/facturaRepository.adapter';
@@ -29,154 +31,185 @@ import { SolicitudAccesoRepositoryAdapter } from './adapter/outbound/database/ad
 import { VerificacionTributariaRepositoryAdapter } from './adapter/outbound/database/adapters/verificacionTributariaRepository.adapter';
 import { OrganizacionAdminRepositoryAdapter } from './adapter/outbound/database/adapters/organizacionAdminRepository.adapter';
 import { StorageMEdiaRepositoryAdapter } from './adapter/outbound/database/adapters/storageMediaRepository.adapter';
+import Redis from 'ioredis';
+import { CACHE_PROVIDER } from 'src/core/domain/puertos/outbound/IFacturaCache.repository';
+import { FacturaCacheAdapter } from './adapter/outbound/cache/facturaCache.adapter';
 
 const NOTIFICATION_MODULE = 'NOTIFICATION_SERVICE';
 
 @Module({
-    imports: [
-        DatabaseModule,
-        SecretsModule,
-        HttpServerModule,
-        MetricsModule,
-        ConfigModule,
-        CacheModule.register({
-            isGlobal: true,
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: async (configService: ConfigService) => ({
-                isGlobal: true,
-                store: RedisStore,
-                host: configService.get('redis.host') || 'localhost',
-                port: configService.get('redis.port') || '6379',
-                ttl: configService.get('redis.ttl') || '3600', // 1 hora por defecto
-            }),
-        }),
-        TypeOrmModule.forFeature([
-        ]),
-        NestConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: ['.env.dev'],
-        }),
-        ClientsModule.registerAsync([
-            {
-                name: NOTIFICATION_MODULE,
-                imports: [ConfigModule],
-                inject: [ConfigService],
-                useFactory: (configService: ConfigService) => {
-                    const host = configService.get<string>('rabbitmq.host') || 'rabbitmq';
-                    const port = configService.get<number>('rabbitmq.port') || 5672;
-                    const user = configService.get<string>('rabbitmq.user') || 'core';
-                    const pass = configService.get<string>('rabbitmq.pass') || 'core-123';
-                    const queue = configService.get<string>('rabbitmq.queue') || 'notify_queue';
-                    const exchange = configService.get<string>('rabbitmq.exchange') || 'storage_notifications_exchange';
-                    const routingKey = configService.get<string>('rabbitmq.routingKey') || 'dte.process.notification';
+  imports: [
+    DatabaseModule,
+    SecretsModule,
+    HttpServerModule,
+    MetricsModule,
+    ConfigModule,
+    // CacheModule.register({
+    //     isGlobal: true,
+    //     imports: [ConfigModule],
+    //     inject: [ConfigService],
+    //     useFactory: async (configService: ConfigService) => ({
+    //         isGlobal: true,
+    //         store: RedisStore,
+    //         host: configService.get('redis.host') || 'localhost',
+    //         port: configService.get('redis.port') || '6379',
+    //         ttl: configService.get('redis.ttl') || '3600', // 1 hora por defecto
+    //     }),
+    // }),
+    TypeOrmModule.forFeature([]),
+    NestConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.dev'],
+    }),
+    ClientsModule.registerAsync([
+      {
+        name: NOTIFICATION_MODULE,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => {
+          const host = configService.get<string>('rabbitmq.host') || 'rabbitmq';
+          const port = configService.get<number>('rabbitmq.port') || 5672;
+          const user = configService.get<string>('rabbitmq.user') || 'core';
+          const pass = configService.get<string>('rabbitmq.pass') || 'core-123';
+          const queue =
+            configService.get<string>('rabbitmq.queue') || 'notify_queue';
+          const exchange =
+            configService.get<string>('rabbitmq.exchange') ||
+            'storage_notifications_exchange';
+          const routingKey =
+            configService.get<string>('rabbitmq.routingKey') ||
+            'dte.process.notification';
 
-                    return {
-                        transport: Transport.RMQ,
-                        options: {
-                            urls: [`amqp://${user}:${pass}@${host}:${port}`],
-                            queue,
-                            exchange,
-                            exchangeType: 'topic',
-                            routingKey,
-                            queueOptions: {
-                                durable: true,
-                            },
-                            noAck: true,    // publisher no necesita ACK
-                            isGlobal: false,
-                        },
-                    };
-                },
+          return {
+            transport: Transport.RMQ,
+            options: {
+              urls: [`amqp://${user}:${pass}@${host}:${port}`],
+              queue,
+              exchange,
+              exchangeType: 'topic',
+              routingKey,
+              queueOptions: {
+                durable: true,
+              },
+              noAck: true, // publisher no necesita ACK
+              isGlobal: false,
             },
-        ]),
-    ],
-    providers: [
-        UserProfileRepositoryAdapter,
-        FacturaRepositoryAdapter,
-        QueueClientAdapter,
-        WorkTeamRepositoryAdapter,
-        StorageServiceAdapter,
-        PermisosRepositoryAdapter,
-        organizacionRepositoriAdapter,
-        OrganizacionAdminRepositoryAdapter,
-        SolicitudAccesoRepositoryAdapter,
-        VerificacionTributariaRepositoryAdapter,
-        CatalogoRepositoryAdapter,
-        StorageMEdiaRepositoryAdapter,
-        {
-            provide: CATALOGO_REPOSITORY,
-            useExisting: CatalogoRepositoryAdapter,
+          };
         },
-        {
-            provide: MESSAGE_PUBLISHER,
-            useExisting: QueueClientAdapter,
-        },
-        {
-            provide: STORAGE_SERVICE,
-            inject: [ConfigService, AccessTokenContext],
-            useFactory: (configService: ConfigService, accessTokenContext: AccessTokenContext) => {
-                const baseUrl = configService.get<string>('externalServices.storage.baseUrl');
-                const logger = new Logger('InfrastructureModule');
-                logger.debug(`Configurando cliente Axios para servicio Storage con baseURL: ${baseUrl}`);
-                const client = axios.create({
-                    baseURL: baseUrl,
-                    timeout: configService.get<number>('externalServices.storage.timeout') ?? 8000,
-                });
+      },
+    ]),
+  ],
+  providers: [
+    UserProfileRepositoryAdapter,
+    FacturaRepositoryAdapter,
+    QueueClientAdapter,
+    WorkTeamRepositoryAdapter,
+    StorageServiceAdapter,
+    PermisosRepositoryAdapter,
+    organizacionRepositoriAdapter,
+    OrganizacionAdminRepositoryAdapter,
+    SolicitudAccesoRepositoryAdapter,
+    VerificacionTributariaRepositoryAdapter,
+    CatalogoRepositoryAdapter,
+    StorageMEdiaRepositoryAdapter,
+    FacturaCacheAdapter,
+    {
+      provide: CATALOGO_REPOSITORY,
+      useExisting: CatalogoRepositoryAdapter,
+    },
+    {
+      provide: MESSAGE_PUBLISHER,
+      useExisting: QueueClientAdapter,
+    },
+    {
+      provide: CACHE_PROVIDER,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return new Redis({
+          host: configService.get<string>('redis.host'),
+          port: configService.get<number>('redis.port'),
+        });
+      },
+    },
+    {
+      provide: STORAGE_SERVICE,
+      inject: [ConfigService, AccessTokenContext],
+      useFactory: (
+        configService: ConfigService,
+        accessTokenContext: AccessTokenContext,
+      ) => {
+        const baseUrl = configService.get<string>(
+          'externalServices.storage.baseUrl',
+        );
+        const logger = new Logger('InfrastructureModule');
+        logger.debug(
+          `Configurando cliente Axios para servicio Storage con baseURL: ${baseUrl}`,
+        );
+        const client = axios.create({
+          baseURL: baseUrl,
+          timeout:
+            configService.get<number>('externalServices.storage.timeout') ??
+            8000,
+        });
 
-                client.interceptors.request.use((config) => {
-                    const token = accessTokenContext.getAccessToken();
-                    const correlationId = accessTokenContext.getCorrelationId();
-                    if (!token && !correlationId) {
-                        return config;
-                    }
+        client.interceptors.request.use((config) => {
+          const token = accessTokenContext.getAccessToken();
+          const correlationId = accessTokenContext.getCorrelationId();
+          if (!token && !correlationId) {
+            return config;
+          }
 
-                    if (config.headers && typeof (config.headers as any).set === 'function') {
-                        if (correlationId) {
-                            (config.headers as any).set('X-Correlation-Id', correlationId);
-                        }
-                        if (token) {
-                            (config.headers as any).set('access_token', token);
-                            if (!(config.headers as any).has?.('Authorization')) {
-                                (config.headers as any).set('Authorization', `Bearer ${token}`);
-                            }
-                        }
-                        return config;
-                    }
-
-                    const headers = AxiosHeaders.from(config.headers ?? {});
-                    if (correlationId) {
-                        headers.set('X-Correlation-Id', correlationId);
-                    }
-                    if (token) {
-                        headers.set('access_token', token);
-                        if (!headers.has('Authorization')) {
-                            headers.set('Authorization', `Bearer ${token}`);
-                        }
-                    }
-                    config.headers = headers;
-
-                    return config;
-                });
-                return client;
+          if (
+            config.headers &&
+            typeof (config.headers as any).set === 'function'
+          ) {
+            if (correlationId) {
+              (config.headers as any).set('X-Correlation-Id', correlationId);
             }
-        },
-    ],
-    exports: [
-        UserProfileRepositoryAdapter,
-        FacturaRepositoryAdapter,
-        QueueClientAdapter,
-        WorkTeamRepositoryAdapter,
-        StorageServiceAdapter,
-        PermisosRepositoryAdapter,
-        organizacionRepositoriAdapter,
-        OrganizacionAdminRepositoryAdapter,
-        CatalogoRepositoryAdapter,
-        SolicitudAccesoRepositoryAdapter,
-        VerificacionTributariaRepositoryAdapter,
-        StorageMEdiaRepositoryAdapter,
-        CATALOGO_REPOSITORY,
-        STORAGE_SERVICE,
-        ClientsModule
-    ],
+            if (token) {
+              (config.headers as any).set('access_token', token);
+              if (!(config.headers as any).has?.('Authorization')) {
+                (config.headers as any).set('Authorization', `Bearer ${token}`);
+              }
+            }
+            return config;
+          }
+
+          const headers = AxiosHeaders.from(config.headers ?? {});
+          if (correlationId) {
+            headers.set('X-Correlation-Id', correlationId);
+          }
+          if (token) {
+            headers.set('access_token', token);
+            if (!headers.has('Authorization')) {
+              headers.set('Authorization', `Bearer ${token}`);
+            }
+          }
+          config.headers = headers;
+
+          return config;
+        });
+        return client;
+      },
+    },
+  ],
+  exports: [
+    UserProfileRepositoryAdapter,
+    FacturaRepositoryAdapter,
+    QueueClientAdapter,
+    WorkTeamRepositoryAdapter,
+    StorageServiceAdapter,
+    PermisosRepositoryAdapter,
+    organizacionRepositoriAdapter,
+    OrganizacionAdminRepositoryAdapter,
+    CatalogoRepositoryAdapter,
+    SolicitudAccesoRepositoryAdapter,
+    VerificacionTributariaRepositoryAdapter,
+    StorageMEdiaRepositoryAdapter,
+    CATALOGO_REPOSITORY,
+    STORAGE_SERVICE,
+    ClientsModule,
+    FacturaCacheAdapter
+  ],
 })
-export class InfraestructureModule { }
+export class InfraestructureModule {}

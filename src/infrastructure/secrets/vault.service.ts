@@ -5,6 +5,13 @@ interface VaultSecrets {
   [key: string]: any;
 }
 
+const SECRETS = {
+  DB_POSTGRES: process.env.SECRET_DB_KEY || 'DB-SEIS-POSTGRES',
+  CACHE_REDIS: process.env.SECRET_REDIS_KEY || 'REDIS',
+  JWT: process.env.SECRET_JWT_KEY || 'JWT',
+  SHARED: process.env.SECRET_SHARED_KEY || 'SHARED'
+}
+
 @Injectable()
 export class VaultService implements OnModuleInit {
   private readonly logger = new Logger(VaultService.name);
@@ -47,21 +54,21 @@ export class VaultService implements OnModuleInit {
 
   private async loadAllSecrets() {
     try {
-      // Cargar secretos de auth-service
-      const authSecrets = await this.readSecret('JWT');
-      this.secrets.set('auth-service', authSecrets);
+      // Cargar secretos de DB_POSTGRES
+      const DbSecrets = await this.readSecret(SECRETS.DB_POSTGRES)
+      this.secrets.set(SECRETS.DB_POSTGRES, DbSecrets);
 
-      // Cargar secretos de database
-      const dbSecrets = await this.readSecret('DB-SEIS-POSTGRES');
-      this.secrets.set('DB-SEIS-POSTGRES', dbSecrets);
+      // Cargar secretos de JWT
+      const jwtSecrets = await this.readSecret(SECRETS.JWT)
+      this.secrets.set(SECRETS.JWT, jwtSecrets);
 
       // Cargar secretos de Redis
-      const redisSecrets = await this.readSecret('CACHE-SEIS-REDIS');
-      this.secrets.set('CACHE-SEIS-REDIS', redisSecrets);
+      const redisSecrets = await this.readSecret(SECRETS.CACHE_REDIS);
+      this.secrets.set(SECRETS.CACHE_REDIS, redisSecrets);
 
       // Cargar secretos compartidos
-      const sharedSecrets = await this.readSecret('shared');
-      this.secrets.set('shared', sharedSecrets);
+      const sharedSecrets = await this.readSecret(SECRETS.SHARED);
+      this.secrets.set(SECRETS.SHARED, sharedSecrets);
 
       this.logger.log(`Loaded ${this.secrets.size} secret paths`);
     } catch (error) {

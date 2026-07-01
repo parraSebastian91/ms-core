@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { VaultService } from '../../../secrets/vault.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SecretsModule } from '../../../secrets/secrets.module';
 import { RlsQueryRunner } from './rls-query-runner.service';
@@ -9,9 +8,9 @@ import { RlsQueryRunner } from './rls-query-runner.service';
     imports: [
         SecretsModule,
         TypeOrmModule.forRootAsync({
-            imports: [SecretsModule, ConfigModule],
-            inject: [VaultService, ConfigService],
-            useFactory: async (vaultService: VaultService, configService: ConfigService) => {
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async ( configService: ConfigService) => {
                 return {
                     type: 'postgres',
                     host: configService.get('database.host') ,
