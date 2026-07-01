@@ -12,6 +12,7 @@ import {
 } from 'src/core/domain/model/constantes.model';
 import { FacturaModel } from 'src/core/domain/model/factura.model';
 import { FacturaMarketplace } from 'src/core/domain/model/facturaMarketplace.model';
+import { MarketplacePage } from 'src/core/domain/model/facturaMarketplace.model';
 import { FacturaUpdateModel } from 'src/core/domain/model/facturaUpdate.model';
 import {
   IFacturaManager,
@@ -422,26 +423,22 @@ export class FacturaManagerUseCase implements IFacturaManager {
   }
 
   async ExecuteGetFacturasMarketPlace(
-    usuario: string,
-    orgUUID: string,
-    filtro: string,
-  ): Promise<FacturaMarketplace[]> {
-    const FacturasPublicasdasCached =
-      await this.facturaCache.getFacturasPublicadasFromCache();
-    if (FacturasPublicasdasCached) {
-      return FacturasPublicasdasCached;
-    }
-    const facturasFromRepo = await this.facturaRepository.getFacturas(
-      usuario,
-      orgUUID,
-      filtro,
+    scope: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<MarketplacePage> {
+    const cachedResult = await this.facturaCache.getFacturasPublicadasFromCache(
+      cursor,
+      limit,
     );
-
-    const facturasToCache =
-      await this.facturaCache.PopulateCache(facturasFromRepo);
-
-    return facturasToCache;
+    if (cachedResult.data.length > 0) {
+      return cachedResult;
+    }
+    const facturasFromRepo = await this.facturaRepository.getFacturasPublicadas();
+    await this.facturaCache.PopulateCache(facturasFromRepo);
+    return this.facturaCache.getFacturasPublicadasFromCache(cursor, limit);
   }
+
 
   async ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{
     campo: string;

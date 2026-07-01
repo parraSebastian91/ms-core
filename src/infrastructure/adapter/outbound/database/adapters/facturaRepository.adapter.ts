@@ -153,6 +153,26 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         return [];
     }
 
+    async getFacturasPublicadas(): Promise<FacturaModel[]> {
+        this.logger.debug('Obteniendo todas las facturas publicadas para caché del marketplace');
+        const query = `
+            SELECT *
+            FROM permisos.vw_facturas_publicadas_ofertadas_base
+            WHERE factura_status = 'PUBLICADA'
+            ORDER BY created_at DESC
+        `;
+        try {
+            const result = await this.dataSource.query(query);
+            return (result as any[]).map((row) => FacturaModel.fromEntity(row));
+        } catch (error: any) {
+            this.logger.error(
+                `Error al obtener facturas publicadas para marketplace: ${error?.message ?? error}`,
+                error?.stack,
+            );
+            return [];
+        }
+    }
+
     async getFacturaByID(facturaID: string): Promise<FacturaModel | null> {
         const query = `
             SELECT

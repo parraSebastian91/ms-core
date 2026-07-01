@@ -13,3 +13,9 @@ export class FacturaMarketplace {
   publicadoEn: string;
   nueva?: boolean;
 }
+
+export interface MarketplacePage {
+  data: FacturaMarketplace[];
+  nextCursor: string | null;
+  minDiasAltaLiquidez: number;
+}

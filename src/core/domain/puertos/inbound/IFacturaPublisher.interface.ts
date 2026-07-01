@@ -1,6 +1,6 @@
 import { EVENT_CODES, RESOURCE_TYPE } from '../../model/constantes.model';
 import { FacturaModel } from '../../model/factura.model';
-import { FacturaMarketplace } from '../../model/facturaMarketplace.model';
+import { FacturaMarketplace, MarketplacePage } from '../../model/facturaMarketplace.model';
 import { FacturaUpdateModel } from '../../model/facturaUpdate.model';
 
 export interface VersionTerminosRecord {
@@ -36,10 +36,10 @@ export interface IFacturaManager {
     filtro: string,
   ): Promise<FacturaModel[]>;
   ExecuteGetFacturasMarketPlace(
-    usuario: string,
-    orgUUID: string,
-    filtro: string,
-  ): Promise<FacturaMarketplace[]>;
+    scope: string,
+    cursor?: string,
+    limit?: number,
+  ): Promise<MarketplacePage>;
   ExecuteUpdateFactura(factura: FacturaUpdateModel): Promise<{
     campo: string;
     id: string;

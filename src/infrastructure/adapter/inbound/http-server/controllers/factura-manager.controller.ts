@@ -12,6 +12,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UseFilters,
@@ -239,6 +240,9 @@ export class FacturaManagerController {
   @Get('marketplace')
   @Permissions(permisosControlador.VER_FACTURA, permisosControlador.READ_ONLY)
   async getFacturasMarketplace(
+    @Query('scope') scope: string,
+    @Query('cursor') cursor: string,
+    @Query('limit') limit: string,
     @Req() req: Request,
     @Res() response: Response,
   ): Promise<any> {
@@ -247,9 +251,9 @@ export class FacturaManagerController {
       `[START] getFacturasMarketplace - CorrelationID: ${correlationId}`,
     );
     const facturas = await this.facturaManager.ExecuteGetFacturasMarketPlace(
-      'marketplace',
-      'marketplace',
-      'marketplace',
+      scope ?? 'todos',
+      cursor,
+      limit ? parseInt(limit, 10) : 20,
     );
     this.logger.debug(
       `[END] getFacturasMarketplace - CorrelationID: ${correlationId}`,

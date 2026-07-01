@@ -4,7 +4,7 @@ import {
 } from 'src/core/domain/puertos/outbound/IFacturaCache.repository';
 import Redis from 'ioredis';
 import { Inject } from '@nestjs/common';
-import { FacturaMarketplace } from 'src/core/domain/model/facturaMarketplace.model';
+import { FacturaMarketplace, MarketplacePage } from 'src/core/domain/model/facturaMarketplace.model';
 import { FacturaModel } from 'src/core/domain/model/factura.model';
 
 export class FacturaCacheAdapter implements IFacturaCacheRepository {
@@ -99,63 +99,66 @@ export class FacturaCacheAdapter implements IFacturaCacheRepository {
   }
 
   async getFacturasPublicadasFromCache(
-    page: number = 1,
+    cursor?: string,
     limit: number = 20,
-  ): Promise<{
-    total: number;
-    page: number;
-    limit: number;
-    data: FacturaMarketplace[];
-  }> {
+  ): Promise<MarketplacePage> {
+    const MIN_DIAS_ALTA_LIQUIDEZ = 30;
+    const pageSize = Math.min(limit ?? 20, 100);
+
+    // El cursor es el offset codificado en base64 para evitar exposición de internos
+    const offset = cursor
+      ? parseInt(Buffer.from(cursor, 'base64').toString('utf8'), 10) || 0
+      : 0;
+
     const publicadasKey = this.key.facturaIndexPublicadas();
-    const start = (page - 1) * limit;
-    const stop = start + limit - 1;
     const facturaKeys = await this.redis.zrange(
       publicadasKey,
-      start,
-      stop,
+      offset,
+      offset + pageSize - 1,
       'REV',
     );
-    if (facturaKeys.length === 0) return { total: 0, page, limit, data: [] };
+
+    if (facturaKeys.length === 0) {
+      return { data: [], nextCursor: null, minDiasAltaLiquidez: MIN_DIAS_ALTA_LIQUIDEZ };
+    }
+
     const totalFacturas = await this.redis.zcard(publicadasKey);
 
     const pipeline = this.redis.pipeline();
-
     facturaKeys.forEach((key) => pipeline.hgetall(key));
     const resultados = (await pipeline.exec()) as [
       Error | null,
       Record<string, string>,
-    ][]; // Cambiado a Record<string, string>
+    ][];
 
     const facturas: FacturaMarketplace[] = [];
-    for (const [index, [error, data]] of resultados.entries()) {
-      if (error) {
+    for (const [, [error, data]] of resultados.entries()) {
+      if (error || Object.keys(data).length === 0) {
         continue;
       }
-      if (Object.keys(data).length > 0) {
-        facturas.push({
-          facturaId: data.facturaId,
-          folio: data.folio,
-          razonSocial: data.razonSocial,
-          rutDeudor: data.rutDeudor,
-          monto: parseFloat(data.monto),
-          fechaVencimiento: data.fechaVencimiento,
-          diasRestantes: parseInt(data.diasRestantes, 10),
-          cantidadOfertas: parseInt(data.cantidadOfertas, 10),
-          tasaMinima: data.tasaMinima ? parseFloat(data.tasaMinima) : null,
-          esPreferido: data.esPreferido === 'true',
-          tieneOfertaPropia: data.tieneOfertaPropia === 'true',
-          publicadoEn: data.publicadoEn,
-        });
-      }
+      facturas.push({
+        facturaId: data.facturaId,
+        folio: data.folio,
+        razonSocial: data.razonSocial,
+        rutDeudor: data.rutDeudor,
+        monto: parseFloat(data.monto),
+        fechaVencimiento: data.fechaVencimiento,
+        diasRestantes: parseInt(data.diasRestantes, 10),
+        cantidadOfertas: parseInt(data.cantidadOfertas, 10),
+        tasaMinima: data.tasaMinima ? parseFloat(data.tasaMinima) : null,
+        esPreferido: data.esPreferido === 'true',
+        tieneOfertaPropia: data.tieneOfertaPropia === 'true',
+        publicadoEn: data.publicadoEn,
+      });
     }
 
-    return {
-      total: totalFacturas,
-      page: page,
-      limit,
-      data: facturas,
-    };
+    const nextOffset = offset + facturas.length;
+    const nextCursor =
+      nextOffset < totalFacturas
+        ? Buffer.from(String(nextOffset)).toString('base64')
+        : null;
+
+    return { data: facturas, nextCursor, minDiasAltaLiquidez: MIN_DIAS_ALTA_LIQUIDEZ };
   }
 
   async setFacturaInCache(factura: FacturaModel): Promise<FacturaMarketplace> {

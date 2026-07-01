@@ -11,6 +11,7 @@ export interface IFacturaManagerRepository {
      */
     publishFactura(factura: FacturaModel): Promise<string>;
     getFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]>;
+    getFacturasPublicadas(): Promise<FacturaModel[]>;
     getFacturaByID(facturaID: string): Promise<FacturaModel | null>;
     validateFacturaEditable(facturaID: string): Promise<boolean>;
     updateFactura(factura: FacturaUpdateModel): Promise<{ id: string, valor: any, isUpdate: any, mensaje: string } | null>;
