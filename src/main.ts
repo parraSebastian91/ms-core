@@ -1,6 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from './infrastructure/adapter/inbound/http-server/pipes/validation.pipe';
+import { register } from 'prom-client';
+
+// Limpiar registry de Prometheus para evitar "metric already registered"
+register.clear();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
