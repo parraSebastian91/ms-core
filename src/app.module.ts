@@ -18,6 +18,7 @@ import { VerificacionTributariaRepositoryAdapter } from './infrastructure/adapte
 import { TributaryService } from './core/application/service/tributary.service';
 import { StorageMEdiaRepositoryAdapter } from './infrastructure/adapter/outbound/database/adapters/storageMediaRepository.adapter';
 import { FacturaCacheAdapter } from './infrastructure/adapter/outbound/cache/facturaCache.adapter';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -25,6 +26,12 @@ import { FacturaCacheAdapter } from './infrastructure/adapter/outbound/cache/fac
       load: [configurations],
       isGlobal: true,
       envFilePath: ['.env', '.env.container'],
+    }),
+    PrometheusModule.register({
+      defaultMetrics: {
+        enabled: true,
+      },
+      path: '/metrics',
     }),
     CoreModule.register({
       modules: [InfraestructureModule],
