@@ -35,7 +35,7 @@ import { StorageController } from './controllers/storage.controller';
     imports: [
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'TU_SECRETO_AQUI',
-            signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' },
+            signOptions: { expiresIn: process.env.JWT_EXPIRES_IN as any || '1h' },
         }),
     ],
     controllers: [

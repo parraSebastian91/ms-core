@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nest
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import { inspect } from 'node:util';
-import { connect, Channel, Connection } from 'amqplib';
+import type { Channel, ChannelModel } from 'amqplib';
+import { connect } from 'amqplib';
 import { ConfigService } from '@nestjs/config';
 import { IMessagePublisher } from 'src/core/domain/puertos/inbound/message.publisher.interface';
 
@@ -11,7 +12,7 @@ export class QueueClientAdapter implements IMessagePublisher, OnModuleInit, OnMo
   private readonly logger = new Logger(QueueClientAdapter.name);
   private connected = false;
 
-  private amqpConn?: Connection;
+  private amqpConn?: ChannelModel;
   private amqpChannel?: Channel;
   private amqpUrl = '';
   constructor(

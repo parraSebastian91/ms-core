@@ -24,9 +24,9 @@ import { RlsQueryRunner } from './rls-query-runner.service';
                     logging: true,
                     logger: 'advanced-console',
                     maxQueryExecutionTime: 1000,
-                    ssl: true,
+                    ssl: configService.get('database.ssl') === 'true',
                     extra: {
-                        ssl: true,
+                        ssl: configService.get('database.ssl') === 'true',
                         connectionTimeoutMillis: 5000,
                         query_timeout: 10000,
                         statement_timeout: 10000,
