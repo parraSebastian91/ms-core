@@ -28,6 +28,8 @@ import {
   FacturaUpdateModel,
 } from 'src/core/domain/model/facturaUpdate.model';
 import { FacturaCreateRequestDto } from '../model/dto/facturaCreate.request.dto';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Counter } from 'prom-client';
 
 const permisosControlador = {
   VER_FACTURA: 'FCT_VEW',
@@ -44,6 +46,10 @@ export class FacturaManagerController {
   constructor(
     @Inject('FACTURA_MANAGER_USE_CASE')
     private readonly facturaManager: IFacturaManager,
+    @InjectMetric('core_facturas_created_total')
+    private readonly facturasCreatedCounter: Counter<string>,
+    @InjectMetric('core_marketplace_requests_total')
+    private readonly marketplaceRequestsCounter: Counter<string>,
   ) {}
 
   @Post('url')
@@ -176,6 +182,7 @@ export class FacturaManagerController {
           ),
         );
     }
+    this.facturasCreatedCounter.inc();
     return response
       .status(201)
       .json(
@@ -250,6 +257,7 @@ export class FacturaManagerController {
     this.logger.debug(
       `[START] getFacturasMarketplace - CorrelationID: ${correlationId}`,
     );
+    this.marketplaceRequestsCounter.inc({ endpoint: 'marketplace' });
     const facturas = await this.facturaManager.ExecuteGetFacturasMarketPlace(
       scope ?? 'todos',
       cursor,
