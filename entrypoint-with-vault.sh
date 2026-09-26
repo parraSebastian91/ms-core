@@ -21,7 +21,7 @@ vault_get() {
     local field=$2
     curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
         "$VAULT_ADDR/v1/$path" | \
-        jq -r ".data.data.$field"
+        jq -r ".data.data.$field // empty"
 }
 
 load_database(){
@@ -116,6 +116,7 @@ load_service_env(){
     local path_service="secret/data/flowis/$SERVICE_NAME"
     export NODE_ENV=$(vault_get "$path_service" "NODE_ENV")
     export PORT=$(vault_get "$path_service" "PORT")
+    export PORT="${PORT:-3001}"
     export MIN_LOG_LEVEL=$(vault_get "$path_service" "MIN_LOG_LEVEL")
     export RABBITMQ_USER=$(vault_get "$path_service" "RABBITMQ_USER")
     export RABBITMQ_PASS=$(vault_get "$path_service" "RABBITMQ_PASS")
