@@ -2,7 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
-import { Body, Controller, Get, HttpStatus, Inject, Param, Put, Query, Res, UseFilters } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Inject, Param, Put, Query, Res, UseFilters, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { Permissions } from '../decorators/permissions.decorator';
 import { IUserProfileAdministratorUseCase } from 'src/core/domain/puertos/inbound/IUserAdministrator.interface';
@@ -10,10 +10,12 @@ import { ApiResponse } from '../model/api-response.model';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
 import { UserProfileDTO } from '../model/dto/userProfile.response.dto';
 import { UserProfileReqResDTO } from '../model/dto/userProfile.request.dto';
+import { SelfOnlyGuard } from '../guards/self-only.guard';
 import { UserOrganizacionProfileDTO } from '../model/dto/UserOrganizacionProfile.dto';
 
 @Controller("usuario")
 @UseFilters(CoreExceptionFilter)
+@UseGuards(SelfOnlyGuard)
 export class UserProfileController {
 
     constructor(
