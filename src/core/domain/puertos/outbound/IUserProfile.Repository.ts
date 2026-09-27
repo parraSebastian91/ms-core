@@ -6,7 +6,7 @@ export interface IUserProfileRepository {
     getUserProfile(uuid: string): Promise<UserProfileModel | null>;
     GetSistema(uuid: string): Promise<any>;
     GetUserProfileImage(uuid: string): Promise<ProfileImageModel[]>;
-    UpdateUserProfile(uuid: string, data: UserProfileModel): Promise<UserProfileModel>;
+    UpdateUserProfile(uuid: string, data: UserProfileModel, accessToken: string): Promise<UserProfileModel>;
     getOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]>
     /**
      * 

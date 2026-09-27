@@ -25,38 +25,32 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                         u.usuario_uuid,
                         u.created_at                AS "ingreso",
                         u.activo,
-                        c.nombres,
-                        c.apellido_paterno,
-                        c.apellido_materno,
-                        c.direccion,
-                        c.celular,
-                        c.correo,
-                        c.fecha_nacimiento,
-                        c.redes_sociales,
-                        c.tipo_documento,
-                        c.numero_documento,
-                        tc.nombre                   AS "tipo_contacto",
+                        u.nombres,
+                        u.apellido_paterno,
+                        u.apellido_materno,
+                        u.direccion,
+                        u.celular,
+                        u.correo,
+                        u.fecha_nacimiento,
+                        u.redes_sociales,
+                        u.tipo_documento,
+                        u.numero_documento,
+                        u.tipo_contacto             AS "tipo_contacto",
                        COALESCE(
-                            ARRAY_AGG(r.codigo ORDER BY r.codigo )
-                            FILTER (WHERE r.codigo IS NOT NULL),
+                            ARRAY_AGG(r.rol_codigo ORDER BY r.rol_codigo )
+                            FILTER (WHERE r.rol_codigo IS NOT NULL),
                             '{}'::text[]
                         )                          AS roles
-                        FROM core.usuario u
-                        LEFT JOIN core.contacto c
-                            ON u.contacto_id = c.contacto_id
-                        LEFT JOIN core.tipo_contacto tc
-                            ON c.tipo_contacto_id = tc.tipo_contacto_id
-                        LEFT JOIN core.usuario_rol ur
-                            ON ur.usuario_id = u.usuario_id
-                        LEFT JOIN core.rol r
-                            ON r.rol_id = ur.rol_id
+                        FROM identity_api.v_usuario_perfil u
+                        LEFT JOIN identity_api.v_usuario_rol r
+                            ON r.usuario_uuid = u.usuario_uuid
                         WHERE u.usuario_uuid = $1
                         GROUP BY
-                            u.userName, u.usuario_uuid, u.created_at, u.activo,
-                            c.nombres, c.apellido_paterno, c.apellido_materno,
-                            c.direccion, c.celular, c.correo, c.fecha_nacimiento,
-                            c.redes_sociales, c.tipo_documento, c.numero_documento,
-                            tc.nombre`;
+                            u.username, u.usuario_uuid, u.created_at, u.activo,
+                            u.nombres, u.apellido_paterno, u.apellido_materno,
+                            u.direccion, u.celular, u.correo, u.fecha_nacimiento,
+                            u.redes_sociales, u.tipo_documento, u.numero_documento,
+                            u.tipo_contacto`;
 
         const result = await this.dataSource.query(query, [uuid]);
 
@@ -67,49 +61,34 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
     async GetSistema(uuid: string): Promise<any> {
 
+        // Navegación y permisos efectivos vienen del contrato identity_api; los sistemas contratados, del dominio core.
         const query = `SELECT
                         o.organizacion_uuid         AS organizacion_identity,
-                        s.nombre                    AS nombre_sistema,
-                        s.path                      AS ruta_sistema,
-                        s.descripcion               AS descripcion_sistema,
-                        s.icono 					as sys_icon,
-                        m.nombre                    AS nombre_modulo,
-                        m.path                      AS ruta_modulo,
-                        m.descripcion               AS descripcion_modulo,
-                        m.icono  				    AS mod_icon,
-                        f.nombre                    AS nombre_funcion,
-                        f.path                      AS ruta_funcion,
-                        f.descripcion               AS descripcion_funcion,
-                        f.icono  				    AS func_icon,
-                        p.per_cod                   AS codigo_permiso,
-                        p.per_nombre                AS nombre_permiso
-                    FROM core.usuario u 
-                        join core.organizacion_miembro om
-                            on u.usuario_uuid = om.usuario_uuid 
-                            and om.activo = true
-                        join core.organizacion o 
-                            on o.organizacion_id = om.organizacion_id 
+                        n.sistema_nombre            AS nombre_sistema,
+                        n.sistema_path              AS ruta_sistema,
+                        n.sistema_descripcion       AS descripcion_sistema,
+                        n.sistema_icono             AS sys_icon,
+                        n.modulo_nombre             AS nombre_modulo,
+                        n.modulo_path               AS ruta_modulo,
+                        n.modulo_descripcion        AS descripcion_modulo,
+                        n.modulo_icono              AS mod_icon,
+                        n.funcion_nombre            AS nombre_funcion,
+                        n.funcion_path              AS ruta_funcion,
+                        n.funcion_descripcion       AS descripcion_funcion,
+                        n.funcion_icono             AS func_icon,
+                        n.permiso_codigo            AS codigo_permiso,
+                        n.permiso_nombre            AS nombre_permiso
+                    FROM core.organizacion_miembro om
+                        join core.organizacion o
+                            on o.organizacion_id = om.organizacion_id
                         JOIN core.organizacion_sistema os
                             ON os.organizacion_id = o.organizacion_id
-                        JOIN core.sistema s
-                            ON s.sistema_id = os.sistema_id
-                            AND s.activo = true
-                        JOIN core.modulo m
-                            ON m.sistema_id = s.sistema_id
-                            AND m.activo = true
-                        LEFT JOIN core.funcionalidad f
-                            ON f.modulo_id = m.modulo_id
-                            AND f.activo = true
-                        JOIN core.usuario_rol ur
-                            ON ur.usuario_id = u.usuario_id
-                        JOIN core.rol_modulo_permiso rmp
-                            ON rmp.rol_id = ur.rol_id
-                            AND rmp.modulo_id = m.modulo_id
-                        JOIN core.permiso p
-                            ON p.permiso_id = rmp.permiso_id
-                            AND p.per_activo = true
-                    WHERE u.usuario_uuid = $1
-                    ORDER BY o.razon_social, s.nombre, m.nombre, f.nombre, p.per_cod;`;
+                        JOIN identity_api.v_usuario_navegacion n
+                            ON n.usuario_uuid = om.usuario_uuid
+                            AND n.sistema_id = os.sistema_id
+                    WHERE om.usuario_uuid = $1
+                        AND om.activo = true
+                    ORDER BY o.razon_social, n.sistema_nombre, n.modulo_nombre, n.funcion_nombre, n.permiso_codigo;`;
         const result = await this.dataSource.query(query, [uuid]);
         if (!result?.length) return null;
         return SystemNavigationModel.fromDatabaseRecord(result);
@@ -118,19 +97,18 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
 
     async GetUserProfileImage(uuid: string): Promise<ProfileImageModel[]> {
         this.logger.log(`Fetching user profile image for UUID: ${uuid}`);
-        const query = ` select 
+        const query = ` select
                         m.category,
                         mv.url_path as path,
-                        mv.metadata 
-                        from 
-                            core.usuario u left join media.media_assets m
-                                on u.usuario_uuid = m.owner_id
-                                and m.status = 'READY'
-                                and m.m_type = 'IMAGE'
-                            left join media.media_variants mv
+                        mv.metadata
+                        from
+                            media.media_assets m
+                            join media.media_variants mv
                                 on mv.asset_id = m.id
-                        where 
-                        u.usuario_uuid = $1`;
+                        where
+                            m.owner_id = $1
+                            and m.status = 'READY'
+                            and m.m_type = 'IMAGE'`;
         const result = await this.dataSource.query<ProfileImageQueryResponse[]>(query, [uuid]);
         if (!result[0]?.metadata) {
             this.logger.warn(`No profile image found for UUID: ${uuid}`);
@@ -139,47 +117,54 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
         return ProfileImageQueryResponse.toDomainModel(result);
     }
 
-    async UpdateUserProfile(uuid: string, data: UserProfileModel): Promise<UserProfileModel> {
+    /**
+     * El contacto lo gobierna ms-identity: la escritura va por su API (con el token del propio usuario,
+     * que ms-identity valida) y no por SQL contra el esquema identity.
+     */
+    async UpdateUserProfile(uuid: string, data: UserProfileModel, accessToken: string): Promise<UserProfileModel> {
         this.logger.log(`Updating user profile for UUID: ${uuid}`);
-        const query = `UPDATE core.contacto
-                       SET nombres = $1, apellido_paterno = $2, apellido_materno = $3, direccion = $4, celular = $5, correo = $6
-                       WHERE contacto_id = (SELECT contacto_id FROM core.usuario WHERE usuario_uuid = $7)
-                       RETURNING *`;
-        const values = [data.nombres, data.apellido_paterno, data.apellido_materno, data.direccion, data.celular, data.correo, uuid];
-        const result = await this.dataSource.query<UserProfileModel[]>(query, values);
-        if (!result[0]) {
-            this.logger.warn(`Failed to update user profile for UUID: ${uuid}`);
+        const base = (process.env.IDENTITY_SERVICE_BASE_URL || 'http://identity-service:3000').replace(/\/$/, '');
+        const res = await fetch(`${base}/usuario/profile/${encodeURIComponent(uuid)}`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+            body: JSON.stringify({
+                nombre: { nombres: data.nombres, apellidoPaterno: data.apellido_paterno, apellidoMaterno: data.apellido_materno },
+                datosContacto: { correo: data.correo, telefono: data.celular, ubicacion: data.direccion },
+            }),
+        });
+        if (!res.ok) {
+            this.logger.warn(`ms-identity rechazó la actualización de perfil (HTTP ${res.status}) para UUID: ${uuid}`);
             throw new Error("Failed to update user profile");
         }
-        return result[0];
+        const payload: any = await res.json();
+        return payload?.data as UserProfileModel;
     }
 
     async getOrganizacionByUsuario(uuid: string): Promise<UserOrganizacionProfileModel[]> {
         const query = `WITH roles_priorizados AS (
                             SELECT
-                                ur.usuario_id,
-                                r.codigo,
+                                ur.usuario_uuid,
+                                ur.rol_codigo AS codigo,
                                 ROW_NUMBER() OVER (
-                                    PARTITION BY ur.usuario_id
+                                    PARTITION BY ur.usuario_uuid
                                     ORDER BY
-                                        CASE r.codigo
+                                        CASE ur.rol_codigo
                                             WHEN 'ADMIN_FINANCIADORA'    THEN 1
                                             WHEN 'EJECUTIVO_FINANCIADORA' THEN 2
                                             WHEN 'ADMIN_CEDENTE'          THEN 3
                                             WHEN 'CLIENTE_CEDENTE'        THEN 4
                                         END
                                 ) AS rn
-                            FROM core.usuario_rol ur
-                            JOIN core.rol r ON r.rol_id = ur.rol_id
-                            WHERE r.codigo IN (
+                            FROM identity_api.v_usuario_rol ur
+                            WHERE ur.rol_codigo IN (
                                 'CLIENTE_CEDENTE', 'ADMIN_CEDENTE',
                                 'EJECUTIVO_FINANCIADORA', 'ADMIN_FINANCIADORA'
                             )
                         )
                         SELECT
-                            CONCAT(c.nombres, ' ', c.apellido_paterno, ' ', c.apellido_materno) AS nombre_contacto,
+                            CONCAT(u.nombres, ' ', u.apellido_paterno, ' ', u.apellido_materno) AS nombre_contacto,
                             u.usuario_uuid,
-                            u.userName,
+                            u.username,
                             orc.nombre  AS cargo,
                             o.razon_social,
                             o.organizacion_uuid,
@@ -194,9 +179,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                                     THEN 'PORTAL_CEDENTE'
                                 ELSE 'SIN_ACCESO'
                             END AS portal
-                        FROM core.usuario u
-                        JOIN core.contacto c
-                            ON u.contacto_id = c.contacto_id
+                        FROM identity_api.v_usuario u
                         JOIN core.organizacion_miembro om
                             ON u.usuario_uuid = om.usuario_uuid
                         JOIN core.organizacion_rol_catalog orc
@@ -205,7 +188,7 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
                             ON om.organizacion_id = o.organizacion_id
                             AND o.activo = true
                         JOIN roles_priorizados rp
-                            ON rp.usuario_id = u.usuario_id
+                            ON rp.usuario_uuid = u.usuario_uuid
                             AND rp.rn = 1          -- solo el rol de mayor jerarquía
                         WHERE u.usuario_uuid = $1
                             AND u.activo = true
@@ -222,17 +205,17 @@ export class UserProfileRepositoryAdapter implements IUserProfileRepository {
     async getUserProfileByUsername(usuario: string, organizacion_uuid: string): Promise<{ profile: { userName: string, usuario_uuid: string, organizacion_uuid: string } | null, isValid: boolean }> {
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usuario);
         const query = ` SELECT
-                            u.userName,
+                            u.username,
                             u.usuario_uuid,
                             o.organizacion_uuid
-                        from 
-                            core.usuario u join 
+                        from
+                            identity_api.v_usuario u join 
                             core.organizacion_miembro om 
                                 on u.usuario_uuid = om.usuario_uuid 
                             join core.organizacion o
                                 on o.organizacion_id = om.organizacion_id  and o.activo = true
                         where 
-                        ${isUUID ? 'u.usuario_uuid' : 'u.userName'} = $1
+                        ${isUUID ? 'u.usuario_uuid' : 'u.username'} = $1
                         and o.organizacion_uuid = $2`;
         const values = [usuario, organizacion_uuid];
         try {

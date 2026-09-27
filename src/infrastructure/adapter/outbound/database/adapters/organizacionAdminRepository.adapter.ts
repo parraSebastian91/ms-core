@@ -80,8 +80,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
              FROM core.organizacion_miembro om
              left join core.organizacion o 
                         on o.organizacion_id = om.organizacion_id 
-             JOIN core.usuario u  ON u.usuario_uuid  = om.usuario_uuid
-             JOIN core.contacto c ON c.contacto_id   = u.contacto_id
+             JOIN identity_api.v_usuario c ON c.usuario_uuid = om.usuario_uuid
              JOIN core.organizacion_rol_catalog rc ON rc.codigo = om.rol_codigo
              WHERE o.organizacion_uuid = $1
                AND om.activo = true
@@ -167,8 +166,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
                NULL                AS avatar_url,
                gm.cargo_en_grupo
              FROM core.grupo_miembro gm
-             JOIN core.usuario  u ON u.usuario_uuid = gm.usuario_uuid
-             JOIN core.contacto c ON c.contacto_id  = u.contacto_id
+             JOIN identity_api.v_usuario c ON c.usuario_uuid = gm.usuario_uuid
              WHERE gm.grupo_id = $1
                AND gm.active   = true`,
             [grupoId],
@@ -197,8 +195,7 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
                gt.activo,
                gt.created_at         AS creado_en
              FROM core.grupo_trabajo gt
-             JOIN core.usuario  u ON u.usuario_uuid = gt.lider_usuario_uuid
-             JOIN core.contacto c ON c.contacto_id  = u.contacto_id
+             JOIN identity_api.v_usuario c ON c.usuario_uuid = gt.lider_usuario_uuid
              WHERE gt.organizacion_id = $1
                AND gt.activo          = true
              ORDER BY gt.nombre`,
@@ -245,8 +242,8 @@ export class OrganizacionAdminRepositoryAdapter implements IOrganizacionAdminRep
 
         const liderRows = await this.dataSource.query(
             `SELECT c.nombres, c.apellido_paterno
-             FROM core.usuario u JOIN core.contacto c ON c.contacto_id = u.contacto_id
-             WHERE u.usuario_uuid = $1`,
+             FROM identity_api.v_usuario c
+             WHERE c.usuario_uuid = $1`,
             [input.liderUuid],
         );
 

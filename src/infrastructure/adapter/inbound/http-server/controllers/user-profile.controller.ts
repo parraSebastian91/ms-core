@@ -5,6 +5,7 @@ https://docs.nestjs.com/controllers#controllers
 import { Body, Controller, Get, HttpStatus, Inject, Param, Put, Query, Res, UseFilters, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { Permissions } from '../decorators/permissions.decorator';
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { IUserProfileAdministratorUseCase } from 'src/core/domain/puertos/inbound/IUserAdministrator.interface';
 import { ApiResponse } from '../model/api-response.model';
 import { CoreExceptionFilter } from 'src/infrastructure/exceptionFileter/contacto.filter';
@@ -57,10 +58,11 @@ export class UserProfileController {
     async updateUserProfileImage(
         @Body() body: any,
         @Param("uuid") uuid: string,
+        @CurrentUser("token") accessToken: string,
         @Res() res: Response
     ) {
         const userProfifleModel = UserProfileReqResDTO.toModel(body);
-        const updateResult = await this.userProfileUseCase.ExecuteUpdateUserProfile(uuid, userProfifleModel);
+        const updateResult = await this.userProfileUseCase.ExecuteUpdateUserProfile(uuid, userProfifleModel, accessToken);
         return res.status(200).json(new ApiResponse(HttpStatus.OK, "Extraccion exitosa", updateResult));
     }
 

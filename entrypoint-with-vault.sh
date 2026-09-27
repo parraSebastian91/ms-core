@@ -99,6 +99,7 @@ load_config_endpoint_services(){
     local path="secret/data/flowis/external_services"
     export STORAGE_SERVICE_BASE_URL=$(vault_get "$path" "STORAGE_SERVICE_BASE_URL")
     export CORE_SERVICE_BASE_URL=$(vault_get "$path" "CORE_SERVICE_BASE_URL")
+    export IDENTITY_SERVICE_BASE_URL=$(vault_get "$path" "IDENTITY_SERVICE_BASE_URL")
     export STORAGE_SERVICE_TIMEOUT=$(vault_get "$path" "STORAGE_SERVICE_TIMEOUT")
     export CORE_SERVICE_TIMEOUT=$(vault_get "$path" "CORE_SERVICE_TIMEOUT")
 }
@@ -113,6 +114,7 @@ load_service_env(){
     load_JWT
     load_session_env 
     load_rabbit_env
+    load_config_endpoint_services
     local path_service="secret/data/flowis/$SERVICE_NAME"
     export NODE_ENV=$(vault_get "$path_service" "NODE_ENV")
     export PORT=$(vault_get "$path_service" "PORT")

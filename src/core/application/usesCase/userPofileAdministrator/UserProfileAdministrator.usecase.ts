@@ -46,8 +46,8 @@ export class UserProfileAdministratorUseCase implements IUserProfileAdministrato
         return userProfileImage;
     }
 
-    async ExecuteUpdateUserProfile(uuid: string, data: any): Promise<any> {
-        const updatedUserProfile = await this.userProfileRepository.UpdateUserProfile(uuid, data);
+    async ExecuteUpdateUserProfile(uuid: string, data: any, accessToken: string): Promise<any> {
+        const updatedUserProfile = await this.userProfileRepository.UpdateUserProfile(uuid, data, accessToken);
         if (!updatedUserProfile) {
             this.logger.warn(`Failed to update user profile for UUID: ${uuid}`);
             throw new UserProfileError("Failed to update user profile");
