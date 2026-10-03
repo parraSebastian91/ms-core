@@ -139,6 +139,7 @@ export class NotifyModel {
 
         factura.facturaNumero = p.folio?.valor ?? '';
         factura.deudorRut = p.rut_deudor?.valor ?? '';
+        factura.rutEmisor = p.rut_emisor?.valor ?? '';
         factura.deudorNombre = p.razon_social_deudor?.valor ?? '';
         factura.montoTotal = Number(p.monto_total?.valor ?? 0);
         return factura;

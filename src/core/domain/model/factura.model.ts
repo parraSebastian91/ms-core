@@ -63,6 +63,14 @@ export class FacturaModel {
   rut_cliente_cedente: string; // deudor_rut
   deudorNombre: string;
   deudorRut: string;
+  /**
+   * RUT del emisor segun el timbre firmado.
+   *
+   * Vacio cuando la factura se declaro a mano: ahi no hay TED que lo aporte.
+   * Cuando esta, es dato del SII y no una lectura — sirve para contrastar que
+   * quien publica la factura es de verdad quien la emitio.
+   */
+  rutEmisor: string;
   facturaNumero: string;
   montoTotal: number;
   fechaVencimiento: Date;
@@ -98,6 +106,7 @@ export class FacturaModel {
     this.rut_cliente_cedente = '';
     this.deudorNombre = '';
     this.deudorRut = '';
+    this.rutEmisor = '';
     this.facturaNumero = '';
     this.montoTotal = 0;
     this.fechaVencimiento = new Date();

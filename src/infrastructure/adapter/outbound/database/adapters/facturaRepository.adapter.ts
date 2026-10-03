@@ -62,27 +62,21 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         const configuredSchema = "factura";
         const schema = configuredSchema.replace(/"/g, '""');
 
+        // `factura` NO tiene columna `asset_id`: el enlace con el archivo vive
+        // en `factura.factura_adjuntos`, que es N:M. El INSERT la incluía cuando
+        // venía un assetId y fallaba con "column asset_id does not exist" —
+        // o sea que NINGUNA factura del flujo con documento llegaba a guardarse.
+        // El error quedaba enterrado porque `publishFactura` devuelve el mensaje
+        // como string y quien lo llama sólo busca 'error' o el nombre del
+        // constraint, así que el log de arriba decía "registrada exitosamente".
         const query = `
         INSERT INTO ${schema}.factura 
-        (${factura.assetId != "" ? "asset_id, " : ""} organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor_usuario_uuid) 
-        ${factura.assetId != "" ? "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)" : "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"}
+        (organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor_usuario_uuid, rut_emisor) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id`;
 
         let values: any[] = [];
-        if (factura.assetId != "") {
-            values = [
-                factura.assetId,
-                factura.ownerUUID,
-                factura.deudorNombre,
-                factura.deudorRut,
-                factura.facturaNumero,
-                factura.montoTotal,
-                factura.fechaVencimiento,
-                String(factura.status),
-                factura.correlationId,
-                factura.gestor.uuid ? factura.gestor.uuid : factura.gestor
-            ];
-        } else {
+        {
             values = [
                 factura.ownerUUID,
                 factura.deudorNombre,
@@ -92,7 +86,10 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.fechaVencimiento,
                 String(factura.status),
                 factura.correlationId,
-                factura.gestor.uuid ? factura.gestor.uuid : factura.gestor
+                factura.gestor.uuid ? factura.gestor.uuid : factura.gestor,
+                // Del timbre firmado. NULL si la factura se declaró a mano: ahí
+                // no hay TED que lo aporte.
+                factura.rutEmisor || null
             ];
         }
 
@@ -102,9 +99,29 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             const result = await this.runWithAuditContext(gestorUuid, correlationId, async (queryRunner) => {
                 return queryRunner.query(query, values);
             });
-            const facturaId = result[0].id; // ✅ ID generado
+            const facturaId = result[0].id;
             this.logger.log(`Factura creada con ID: ${facturaId}`);
-            return facturaId; // o true + guardar el ID en otro lado
+
+            // El enlace con el archivo que la originó. Va acá y no en el INSERT
+            // porque es una relación N:M: una factura puede tener su PDF y
+            // además la orden de compra, la guía de despacho y el acta.
+            //
+            // `es_principal` marca cuál es LA factura: los respaldos cuelgan
+            // después con su propio tipo.
+            if (factura.assetId) {
+                await this.runWithAuditContext(gestorUuid, correlationId, async (queryRunner) =>
+                    queryRunner.query(
+                        `INSERT INTO ${schema}.factura_adjuntos
+                           (factura_id, asset_id, tipo, es_principal, orden, descripcion)
+                         VALUES ($1, $2, $3, true, 1, 'Factura electrónica')
+                         ON CONFLICT DO NOTHING`,
+                        [facturaId, factura.assetId, 'DTE-factura'],
+                    ),
+                );
+                this.logger.log(`Adjunto principal enlazado: factura=${facturaId} asset=${factura.assetId}`);
+            }
+
+            return facturaId;
         } catch (error: any) {
             this.logger.error(
                 `Error al publicar la factura: ${error?.message ?? error}`,
