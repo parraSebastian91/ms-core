@@ -31,11 +31,16 @@ export class StorageController {
         const date = new Date();
         this.logger.log(`Request received at ${date.toISOString()} correlationId=${correlationId}`);
         const correlationIdValue = correlationId || ''; // Aquí puedes generar o obtener el correlationId según tu lógica
-        const url = await this.storageService.getPutPresignedUrl(uuid, gestor, objectType, fileName, contentType, correlationIdValue, organization, idFactura);
-        console.log(`Generated presigned URL: ${url}`);
-        this.logger.log(`Presigned URL generated at ${new Date().toISOString()} correlationId=${correlationIdValue} duration=${new Date().getTime() - date.getTime()}ms`);
+        // Devuelve la key Y el assetId: con la factura creándose recién cuando
+        // el worker leyó el documento, el assetId es lo único que el navegador
+        // tiene para asociar el archivo que acaba de subir con la fila que está
+        // esperando en pantalla.
+        const { objectKey, assetId } = await this.storageService.getPutPresignedUrl(
+            uuid, gestor, objectType, fileName, contentType, correlationIdValue, organization, idFactura,
+        );
+        this.logger.log(`Presigned key generada at ${new Date().toISOString()} correlationId=${correlationIdValue} assetId=${assetId} duration=${new Date().getTime() - date.getTime()}ms`);
         return res.status(HttpStatus.OK).json(
-            new ApiResponse(HttpStatus.OK, 'Url Generada', url),
+            new ApiResponse(HttpStatus.OK, 'Url Generada', { objectKey, assetId }),
         );
     }
 

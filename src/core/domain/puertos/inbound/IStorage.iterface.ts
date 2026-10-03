@@ -8,7 +8,7 @@ export interface IStorage {
         CorrelationId: string,
         Organization: string,
         idFactura?: string
-    ): Promise<string>;
+    ): Promise<{ objectKey: string; assetId: string }>;
     getGetPresignedUrl(
         userUuid: string,
         orgUuid: string,

@@ -20,7 +20,7 @@ export class storageUsecase implements IStorage {
         CorrelationId: string,
         Organization: string,
         idFactura?: string
-    ): Promise<string> {
+    ): Promise<{ objectKey: string; assetId: string }> {
 
         const extension = this.sanitizeObjectKeyExtension(ContentType);
         let objectKey: string;
@@ -43,7 +43,22 @@ export class storageUsecase implements IStorage {
                 mediaType = MEDIA_TYPE.MEDIA_TYPE_IMAGE;
                 break;
             case CATEGORY_PROCESS.DOCUMENT_DTE:
-                objectKey = `private/org-documents/${Organization}/factura/${idFactura}/`;
+                // Una factura que nace de su propio documento todavía NO existe:
+                // el archivo se sube primero y la factura se crea cuando el
+                // worker lo leyó y se validó que no sea duplicada ni ilegible.
+                // Colgar la key de un `idFactura` obligaba al orden inverso y
+                // dejaba filas de factura muertas por cada documento rechazado.
+                //
+                // `uploads/` es el estacionamiento: el archivo vive ahí y la
+                // factura, cuando nace, apunta a esa key. No hay que mover nada
+                // —copiar y borrar en S3 no es gratis— y el `media_asset` es la
+                // fila que garantiza que ningún archivo subido quede sin rastro.
+                //
+                // Con `idFactura` se mantiene el camino de siempre: volver a
+                // subir el documento de una factura que YA existe.
+                objectKey = idFactura
+                    ? `private/org-documents/${Organization}/factura/${idFactura}/`
+                    : `private/org-documents/${Organization}/uploads/`;
                 mediaType = MEDIA_TYPE.MEDIA_TYPE_DOCUMENT;
                 break;
             case CATEGORY_PROCESS.DOCUMENT_DTE_RESPALDO:
@@ -91,13 +106,20 @@ export class storageUsecase implements IStorage {
 
         const newObject = `${objectKey}${ObjectType}_${media.AssetId}.${extension}`.replace(/ /g, '_');
 
-        // await this.mediaRepository.updateMediaObjectKey(media.AssetId, newObject);
-        // await this.mediaRepository.addAssets(media, ObjectType);
-        await Promise.allSettled([
-            this.mediaRepository.addAssets(media, ObjectType),
-            this.mediaRepository.updateMediaObjectKey(media.AssetId, newObject)
-        ]);
-        return newObject;
+        // `addAssets` escribe en `factura.factura_adjuntos`, que necesita un
+        // `factura_id`. Si la factura todavía no existe no hay a qué adjuntar:
+        // ese enlace lo crea el webhook cuando la factura nace, con el mismo
+        // assetId. Intentarlo acá insertaría un adjunto huérfano.
+        const puedeAdjuntar = Boolean(idFactura);
+        const tareas: Promise<unknown>[] = [
+            this.mediaRepository.updateMediaObjectKey(media.AssetId, newObject),
+        ];
+        if (puedeAdjuntar) {
+            tareas.push(this.mediaRepository.addAssets(media, ObjectType));
+        }
+        await Promise.all(tareas);
+
+        return { objectKey: newObject, assetId: media.AssetId };
     }
 
     async getGetPresignedUrl(userUuid: string, orgUuid: string, assetId: string, correlationId: string): Promise<{ objectKey: string, ttlSeconds: number }> {
