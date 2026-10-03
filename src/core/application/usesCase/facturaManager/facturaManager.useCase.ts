@@ -114,6 +114,34 @@ export class FacturaManagerUseCase implements IFacturaManager {
       );
       return false;
     }
+    // Documento ilegible: NO se crea la factura.
+    //
+    // Antes se insertaba una fila vacía para tener dónde colgar la
+    // notificación. Eso deja una factura muerta por cada documento que no se
+    // pudo leer —una foto borrosa, un PDF escaneado sin timbre— y después hay
+    // que distinguir esas de las reales.
+    //
+    // El archivo NO se pierde: su `media_asset` existe desde que se pidió la
+    // URL firmada, con su correlationId. El drawer recibe este aviso y ofrece
+    // cargar los datos a mano, con el respaldo ya subido y listo para cotejar.
+    const seLeyoAlgo = Boolean(factura.facturaNumero) || Number(factura.montoTotal) > 0;
+    if (!seLeyoAlgo) {
+      this.logger.warn(
+        `Documento ilegible, no se crea factura. Correlación: ${factura.correlationId}`,
+      );
+      publishNotification(
+        this.configService.get<string>('rabbitmq.routingKeyFail'),
+        new MessageDTO(
+          EVENT_CODES.FACTURA_ILEGIBLE,
+          EVENT_DESCRIPTIONS.FACTURA_ILEGIBLE,
+          true,
+        ),
+        new FacturaDTO(),
+        { ...header, error: 'factura_ilegible' },
+      );
+      return false;
+    }
+
     factura.createdBy = createdBy.OCR;
     factura.status =
       factura.status === facturaEstado.PROCESANDO
