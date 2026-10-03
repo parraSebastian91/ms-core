@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { facturaEstado } from "src/core/domain/model/constantes.model";
+import { LoteModel } from 'src/core/domain/model/lote.model';
 import { FacturaModel, NotaOCR } from "src/core/domain/model/factura.model";
 import { CampoFactura, FacturaUpdateModel } from "src/core/domain/model/facturaUpdate.model";
 import { IFacturaManagerRepository } from "src/core/domain/puertos/outbound/IFacturaManager.repository";
@@ -69,10 +70,16 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
         // El error quedaba enterrado porque `publishFactura` devuelve el mensaje
         // como string y quien lo llama sólo busca 'error' o el nombre del
         // constraint, así que el log de arriba decía "registrada exitosamente".
+        // `lote_id` se HEREDA del asset en vez de venir en el payload: cuando
+        // la persona confirmó la tanda las facturas no existían todavía, así
+        // que la pertenencia quedó registrada en el archivo subido. El subquery
+        // lo trae de ahí, y da NULL para una subida individual — que es lo
+        // correcto: no hay que inventarle un lote de uno.
         const query = `
         INSERT INTO ${schema}.factura 
-        (organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor_usuario_uuid, rut_emisor) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        (organizacion_id, deudor_nombre, deudor_rut, factura_numero, monto_total, fecha_vencimiento, status, correlation_id, gestor_usuario_uuid, rut_emisor, lote_id) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                (SELECT lote_id FROM media.media_assets WHERE id = $11))
         RETURNING id`;
 
         let values: any[] = [];
@@ -89,7 +96,8 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
                 factura.gestor.uuid ? factura.gestor.uuid : factura.gestor,
                 // Del timbre firmado. NULL si la factura se declaró a mano: ahí
                 // no hay TED que lo aporte.
-                factura.rutEmisor || null
+                factura.rutEmisor || null,
+                factura.assetId || null
             ];
         }
 
@@ -130,6 +138,34 @@ export class FacturaRepositoryAdapter implements IFacturaManagerRepository {
             );
             return error?.message ?? error;
         }
+    }
+
+    /**
+     * Crea una tanda y devuelve su id.
+     *
+     * El nombre viene propuesto desde el dominio; la persona lo puede cambiar
+     * después con `renombrarLote`.
+     */
+    async crearLote(lote: LoteModel): Promise<string> {
+        const gestorUuid = this.extractUuid(lote.gestorUuid);
+        const filas = await this.runWithAuditContext(gestorUuid, null, async (queryRunner) =>
+            queryRunner.query(
+                `INSERT INTO factura.lote (nombre, descripcion, organizacion_id, gestor_usuario_uuid)
+                 VALUES ($1, $2, $3, $4) RETURNING id`,
+                [lote.nombre, lote.descripcion ?? null, lote.organizacionId, gestorUuid],
+            ),
+        );
+        this.logger.log(`Lote creado: ${filas[0].id} (${lote.nombre})`);
+        return filas[0].id;
+    }
+
+    async renombrarLote(loteId: string, nombre: string, descripcion?: string): Promise<void> {
+        await this.dataSource.query(
+            `UPDATE factura.lote
+                SET nombre = $2, descripcion = COALESCE($3, descripcion), actualizado_en = now()
+              WHERE id = $1`,
+            [loteId, nombre, descripcion ?? null],
+        );
     }
 
     async getFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]> {

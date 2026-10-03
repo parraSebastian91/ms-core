@@ -2,6 +2,7 @@
 https://docs.nestjs.com/controllers#controllers
 */
 
+import { LoteModel } from 'src/core/domain/model/lote.model';
 import {
   Body,
   Controller,
@@ -153,6 +154,46 @@ export class FacturaManagerController {
       .json(
         new ApiResponse(HttpStatus.OK, mensaje, { campo, id, valor, isUpdate }),
       ); // Devuelve el campo actualizado y el nuevo valor
+  }
+
+  /**
+   * Abre una tanda de publicación.
+   *
+   * Se llama al confirmar una subida de más de un archivo, ANTES de pedir las
+   * URLs firmadas: su id viaja con cada una y queda registrado en el archivo,
+   * porque cuando se confirma la tanda las facturas todavía no existen.
+   *
+   * El nombre lo propone el sistema si no viene uno. Pedirlo acá agregaría
+   * fricción justo cuando la persona quiere terminar.
+   */
+  @Post('lote')
+  @Permissions(permisosControlador.CREAR_FACTURA)
+  async crearLote(@Req() request: Request, @Res() response: Response) {
+    const { organizacionId, gestorUuid, nombre, descripcion, cantidad } = request.body as {
+      organizacionId: string; gestorUuid: string; nombre?: string; descripcion?: string; cantidad?: number;
+    };
+    const lote = new LoteModel(
+      organizacionId,
+      gestorUuid,
+      (nombre ?? '').trim() || LoteModel.nombrePropuesto(Number(cantidad) || 0),
+      descripcion,
+    );
+    const id = await this.facturaManager.ExecuteCrearLote(lote);
+    this.logger.log(`Lote abierto: ${id} (${lote.nombre})`);
+    return response.status(HttpStatus.CREATED).json(
+      new ApiResponse(HttpStatus.CREATED, 'Lote creado', { id, nombre: lote.nombre }),
+    );
+  }
+
+  @Patch('lote/:loteId')
+  @Permissions(permisosControlador.CREAR_FACTURA)
+  async renombrarLote(@Req() request: Request, @Res() response: Response) {
+    const { loteId } = request.params;
+    const { nombre, descripcion } = request.body as { nombre: string; descripcion?: string };
+    await this.facturaManager.ExecuteRenombrarLote(loteId, nombre, descripcion);
+    return response.status(HttpStatus.OK).json(
+      new ApiResponse(HttpStatus.OK, 'Lote actualizado', { id: loteId, nombre }),
+    );
   }
 
   @Post()

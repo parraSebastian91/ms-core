@@ -27,6 +27,7 @@ export class StorageController {
         @Query('organization') organization: string,
         @Query('id_factura') idFactura?: string,
         @Query('correlation_id') correlationId?: string,
+        @Query('lote_id') loteId?: string,
     ) {
         const date = new Date();
         this.logger.log(`Request received at ${date.toISOString()} correlationId=${correlationId}`);
@@ -36,7 +37,7 @@ export class StorageController {
         // tiene para asociar el archivo que acaba de subir con la fila que está
         // esperando en pantalla.
         const { objectKey, assetId } = await this.storageService.getPutPresignedUrl(
-            uuid, gestor, objectType, fileName, contentType, correlationIdValue, organization, idFactura,
+            uuid, gestor, objectType, fileName, contentType, correlationIdValue, organization, idFactura, loteId,
         );
         this.logger.log(`Presigned key generada at ${new Date().toISOString()} correlationId=${correlationIdValue} assetId=${assetId} duration=${new Date().getTime() - date.getTime()}ms`);
         return res.status(HttpStatus.OK).json(
@@ -51,6 +52,7 @@ export class StorageController {
         @Query('orgUuid') orgUuid: string,
         @Query('userUuid') userUuid: string,
         @Query('correlation_id') correlationId?: string,
+        @Query('lote_id') loteId?: string,
     ) {
         const date = new Date();
         this.logger.log(`Request received at ${date.toISOString()} correlationId=${correlationId}`);

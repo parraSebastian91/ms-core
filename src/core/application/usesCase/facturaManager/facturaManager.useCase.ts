@@ -1,3 +1,4 @@
+import { LoteModel } from 'src/core/domain/model/lote.model';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -48,6 +49,14 @@ export class FacturaManagerUseCase implements IFacturaManager {
     private readonly facturaService: IFacturaService,
     private readonly facturaCache: IFacturaCacheRepository,
   ) {}
+
+  async ExecuteCrearLote(lote: LoteModel): Promise<string> {
+    return this.facturaRepository.crearLote(lote);
+  }
+
+  async ExecuteRenombrarLote(loteId: string, nombre: string, descripcion?: string): Promise<void> {
+    return this.facturaRepository.renombrarLote(loteId, nombre, descripcion);
+  }
 
   async ExecutePublishFactura(factura: FacturaModel): Promise<boolean> {
     //**

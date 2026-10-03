@@ -1,3 +1,4 @@
+import { LoteModel } from 'src/core/domain/model/lote.model';
 import { CATEGORY_PROCESS, facturaEstado } from "../../model/constantes.model";
 import { FacturaModel, NotaOCR } from "../../model/factura.model";
 import { FacturaUpdateModel } from "../../model/facturaUpdate.model";
@@ -10,6 +11,18 @@ export interface IFacturaManagerRepository {
      * @returns Id del recurso inserrtado en Base de datos
      */
     publishFactura(factura: FacturaModel): Promise<string>;
+
+    /** Crea una tanda de publicación y devuelve su id. */
+    crearLote(lote: LoteModel): Promise<string>;
+
+    /**
+     * Cambia el nombre de una tanda.
+     *
+     * Existe porque el nombre lo propone el sistema al subir: pedirlo ahí
+     * agregaría fricción justo cuando la persona quiere terminar, y a las dos
+     * semanas nadie recuerda qué era "Tanda 3".
+     */
+    renombrarLote(loteId: string, nombre: string, descripcion?: string): Promise<void>;
     getFacturas(usuario: string, orgUUID: string, filtro: string): Promise<FacturaModel[]>;
     getFacturasPublicadas(): Promise<FacturaModel[]>;
     getFacturaByID(facturaID: string): Promise<FacturaModel | null>;

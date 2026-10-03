@@ -7,7 +7,8 @@ export interface IStorage {
         ContentType: string,
         CorrelationId: string,
         Organization: string,
-        idFactura?: string
+        idFactura?: string,
+        loteId?: string
     ): Promise<{ objectKey: string; assetId: string }>;
     getGetPresignedUrl(
         userUuid: string,

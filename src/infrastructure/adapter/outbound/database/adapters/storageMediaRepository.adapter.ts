@@ -61,6 +61,13 @@ export class StorageMEdiaRepositoryAdapter implements IStorageMediaRepository {
         }
     }
 
+    async asignarLote(mediaId: string, loteId: string): Promise<void> {
+        await this.dataSource.query(
+            `UPDATE media.media_assets SET lote_id = $2 WHERE id = $1`,
+            [mediaId, loteId],
+        );
+    }
+
     async addAssets(media: StorageMediaModel, objectType: string): Promise<boolean> {
         let query = '';
         let params: any[] = [];

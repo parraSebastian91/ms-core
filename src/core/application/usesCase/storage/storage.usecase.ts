@@ -19,7 +19,8 @@ export class storageUsecase implements IStorage {
         ContentType: string,
         CorrelationId: string,
         Organization: string,
-        idFactura?: string
+        idFactura?: string,
+        loteId?: string
     ): Promise<{ objectKey: string; assetId: string }> {
 
         const extension = this.sanitizeObjectKeyExtension(ContentType);
@@ -103,6 +104,13 @@ export class storageUsecase implements IStorage {
         }
 
         const media = await this.mediaRepository.createMediaObject(StoraMEdiaModel);
+
+        // La pertenencia a una tanda se registra en el ARCHIVO, no en la
+        // factura: cuando la persona confirmó la tanda las facturas todavía no
+        // existían. La factura lo hereda de su adjunto principal al crearse.
+        if (loteId) {
+            await this.mediaRepository.asignarLote(media.AssetId, loteId);
+        }
 
         const newObject = `${objectKey}${ObjectType}_${media.AssetId}.${extension}`.replace(/ /g, '_');
 

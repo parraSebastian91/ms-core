@@ -1,3 +1,4 @@
+import { LoteModel } from 'src/core/domain/model/lote.model';
 import { EVENT_CODES, RESOURCE_TYPE } from '../../model/constantes.model';
 import { FacturaModel } from '../../model/factura.model';
 import { FacturaMarketplace, MarketplacePage } from '../../model/facturaMarketplace.model';
@@ -22,6 +23,10 @@ export interface AutorizacionPublicacionPayload {
 }
 
 export interface IFacturaManager {
+  /** Abre una tanda de publicación y devuelve su id. */
+  ExecuteCrearLote(lote: LoteModel): Promise<string>;
+  /** Cambia el nombre de una tanda. El sistema propone uno al crearla. */
+  ExecuteRenombrarLote(loteId: string, nombre: string, descripcion?: string): Promise<void>;
   ExecutePublishFactura(factura: FacturaModel): Promise<boolean>;
   ExecuteCargaDocumentoRespaldo(
     factura: FacturaModel,
