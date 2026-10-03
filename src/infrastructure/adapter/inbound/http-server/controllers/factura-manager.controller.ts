@@ -188,7 +188,9 @@ export class FacturaManagerController {
   @Patch('lote/:loteId')
   @Permissions(permisosControlador.CREAR_FACTURA)
   async renombrarLote(@Req() request: Request, @Res() response: Response) {
-    const { loteId } = request.params;
+    // `String(...)`: Express tipa los params como `string | string[]`, y el
+    // build de la imagen lo rechaza aunque el tsc local lo deje pasar.
+    const loteId = String(request.params.loteId ?? '');
     const { nombre, descripcion } = request.body as { nombre: string; descripcion?: string };
     await this.facturaManager.ExecuteRenombrarLote(loteId, nombre, descripcion);
     return response.status(HttpStatus.OK).json(
